@@ -5,13 +5,13 @@ import { useAuthActions } from '../../hooks/useAuth';
 const Login = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const { handleLogin } = useAuthActions();
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // handleLogin detects role from email, shows toast, and navigates
-    handleLogin({ email, password: 'password123' });
+    handleLogin({ email, password });
   };
 
   return (
@@ -51,7 +51,13 @@ const Login = () => {
 
           <label className="field">
             <FiLock />
-            <input type="password" placeholder="Password" required />
+            <input
+              type="password"
+              placeholder="Password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
           </label>
 
           <button type="submit" className="btn btn-primary" style={{ justifyContent: 'center', width: '100%' }}>
