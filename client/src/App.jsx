@@ -60,129 +60,104 @@ function App() {
 
   const dashboardPrefixes = ['/my-learning', '/player/', '/history', '/instructor', '/admin'];
   const showSidebar = dashboardPrefixes.some((prefix) => pathname.startsWith(prefix));
-  const navbarHeight = 72;
-  const sidebarWidth = 260;
 
   return (
-    <div style={{ height: '100vh', overflow: 'hidden', background: '#f6f9ff' }}>
+    <div className="app-shell">
       <ScrollToTop scrollRef={mainScrollRef} />
+
+      {/* ── Fixed Navbar ── */}
       <Navbar />
 
-      {showSidebar && (
-        <aside
-          style={{
-            position: 'fixed',
-            top: navbarHeight + 'px',
-            left: 0,
-            width: sidebarWidth + 'px',
-            height: 'calc(100vh - ' + navbarHeight + 'px)',
-            padding: '12px',
-            overflowY: 'auto',
-            zIndex: 40,
-          }}
+      <div className="app-body">
+        {/* ── Fixed Sidebar ── */}
+        {showSidebar && (
+          <aside className="app-sidebar">
+            <Sidebar />
+          </aside>
+        )}
+
+        {/* ── Scrollable Main Content ── */}
+        <main
+          ref={mainScrollRef}
+          className={`app-main ${showSidebar ? 'with-sidebar' : ''}`}
         >
-          <Sidebar />
-        </aside>
-      )}
+          <div className="app-content">
+            <Routes>
+              {/* --- PUBLIC ROUTES --- */}
+              <Route path="/" element={<Home />} />
+              <Route path="/browse" element={<Browse />} />
+              <Route path="/course/:id" element={<Details />} />
+              <Route path="/login" element={<Login />} />
 
-      <main
-        ref={mainScrollRef}
-        style={{
-          position: 'fixed',
-          top: navbarHeight + 'px',
-          left: showSidebar ? sidebarWidth + 'px' : 0,
-          right: 0,
-          bottom: 0,
-          overflowY: 'auto',
-          padding: '16px',
-        }}
-      >
-        <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'grid', gap: '16px' }}>
-          <section
-            style={{
-              background: '#ffffff',
-              border: '1px solid #e2e8f0',
-              borderRadius: '16px',
-              padding: '16px',
-              boxShadow: '0 10px 24px rgba(15, 23, 42, 0.08)',
-            }}
-          >
-          <Routes>
-            {/* --- PUBLIC ROUTES --- */}
-            <Route path="/" element={<Home />} />
-            <Route path="/browse" element={<Browse />} />
-            <Route path="/course/:id" element={<Details />} />
-            <Route path="/login" element={<Login />} />
+              {/* --- STUDENT ROUTES (Protected) --- */}
+              <Route
+                path="/my-learning"
+                element={
+                  <Protected>
+                    <MyLearning />
+                  </Protected>
+                }
+              />
+              <Route
+                path="/player/:id"
+                element={
+                  <Protected>
+                    <Player />
+                  </Protected>
+                }
+              />
+              <Route
+                path="/history"
+                element={
+                  <Protected>
+                    <History />
+                  </Protected>
+                }
+              />
 
-            {/* --- STUDENT ROUTES (Protected) --- */}
-            <Route
-              path="/my-learning"
-              element={
-                <Protected>
-                  <MyLearning />
-                </Protected>
-              }
-            />
-            <Route
-              path="/player/:id"
-              element={
-                <Protected>
-                  <Player />
-                </Protected>
-              }
-            />
-            <Route
-              path="/history"
-              element={
-                <Protected>
-                  <History />
-                </Protected>
-              }
-            />
+              {/* --- INSTRUCTOR ROUTES (Role Based) --- */}
+              <Route
+                path="/instructor/dashboard"
+                element={
+                  <RoleGate role="instructor">
+                    <InstructorDash />
+                  </RoleGate>
+                }
+              />
+              <Route
+                path="/instructor/create"
+                element={
+                  <RoleGate role="instructor">
+                    <CreateCourse />
+                  </RoleGate>
+                }
+              />
 
-            {/* --- INSTRUCTOR ROUTES (Role Based) --- */}
-            <Route
-              path="/instructor/dashboard"
-              element={
-                <RoleGate role="instructor">
-                  <InstructorDash />
-                </RoleGate>
-              }
-            />
-            <Route
-              path="/instructor/create"
-              element={
-                <RoleGate role="instructor">
-                  <CreateCourse />
-                </RoleGate>
-              }
-            />
+              {/* --- ADMIN ROUTES (Role Based) --- */}
+              <Route
+                path="/admin/dashboard"
+                element={
+                  <RoleGate role="admin">
+                    <AdminDash />
+                  </RoleGate>
+                }
+              />
+              <Route
+                path="/admin/users"
+                element={
+                  <RoleGate role="admin">
+                    <AdminUsers />
+                  </RoleGate>
+                }
+              />
 
-            {/* --- ADMIN ROUTES (Role Based) --- */}
-            <Route
-              path="/admin/dashboard"
-              element={
-                <RoleGate role="admin">
-                  <AdminDash />
-                </RoleGate>
-              }
-            />
-            <Route
-              path="/admin/users"
-              element={
-                <RoleGate role="admin">
-                  <AdminUsers />
-                </RoleGate>
-              }
-            />
-
-            {/* 404 Page - Optional */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-          </section>
+              {/* 404 Page */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </div>
           <Footer />
-        </div>
-      </main>
+        </main>
+      </div>
     </div>
   );
 }

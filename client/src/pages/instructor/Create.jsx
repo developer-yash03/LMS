@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { FiBookOpen, FiDollarSign, FiEdit3, FiLayers, FiPlusCircle } from 'react-icons/fi';
+import { useToast } from '../../context/ToastContext';
 
 const Create = () => {
+  const { showToast } = useToast();
   const [courseData, setCourseData] = useState({
     title: '',
     description: '',
@@ -12,7 +14,7 @@ const Create = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
     console.log('Saving Course:', courseData);
-    alert('Course Created Successfully! (Mock)');
+    showToast('Course Created Successfully!');
   };
 
   return (
