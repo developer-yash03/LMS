@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
+import { useToast } from '../../context/ToastContext';
 
 const Reset = () => {
+  const { showToast } = useToast();
   const [step, setStep] = useState(1); // 1: Email, 2: OTP, 3: New Password
 
   return (
@@ -24,7 +26,7 @@ const Reset = () => {
         <div>
           <h2>New Password</h2>
           <input type="password" placeholder="New Password" style={{ width: '100%', padding: '10px', marginBottom: '10px' }} />
-          <button onClick={() => alert("Password Changed!")}>Reset Password</button>
+          <button onClick={() => showToast("Password Changed!", "success")}>Reset Password</button>
         </div>
       )}
     </div>

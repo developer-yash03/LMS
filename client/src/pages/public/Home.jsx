@@ -1,12 +1,13 @@
 import React from 'react';
 import { FiAward, FiBookOpen, FiTrendingUp, FiUsers } from 'react-icons/fi';
+import { useCourseContext } from '../../context/CourseContext';
 import CourseCard from '../../components/course/CourseCard';
 
 const Home = () => {
-  const featuredCourses = [
-    { id: 1, title: 'React Basics', instructor: 'John Doe', price: 0 },
-    { id: 2, title: 'MERN Stack', instructor: 'Jane Smith', price: 499 },
-  ];
+  const { courses } = useCourseContext();
+
+  // Show the first 3 courses from the master catalog as featured
+  const featuredCourses = courses.slice(0, 3);
 
   return (
     <div className="home-page">
@@ -41,7 +42,7 @@ const Home = () => {
         </article>
         <article className="stat-card">
           <strong>
-            <FiBookOpen /> 45+ Courses
+            <FiBookOpen /> {courses.length}+ Courses
           </strong>
           <span>From beginner to advanced levels.</span>
         </article>

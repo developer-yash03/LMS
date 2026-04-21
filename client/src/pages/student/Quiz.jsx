@@ -1,15 +1,33 @@
 import React, { useState } from 'react';
-import { FiCheckCircle, FiHelpCircle } from 'react-icons/fi';
+import { FiHelpCircle } from 'react-icons/fi';
+import QuizWidget from '../../components/course/QuizWidget';
+import { useToast } from '../../context/ToastContext';
 
 const Quiz = () => {
-  const [score, setScore] = useState(null);
+  const { showToast } = useToast();
+  const [completed, setCompleted] = useState(false);
+
   const questions = [
-    { q: 'What does HTML stand for?', options: ['Hypertext Markup', 'High Tech Modern'], ans: 0 },
+    {
+      question: 'What does HTML stand for?',
+      options: ['Hypertext Markup Language', 'High Tech Modern Language', 'Hyper Transfer Markup Language', 'Home Tool Markup Language'],
+      answer: 0,
+    },
+    {
+      question: 'Which CSS property is used to change text color?',
+      options: ['font-color', 'text-color', 'color', 'foreground-color'],
+      answer: 2,
+    },
+    {
+      question: 'JavaScript is a ___ language.',
+      options: ['Compiled', 'Interpreted', 'Assembly', 'Machine'],
+      answer: 1,
+    },
   ];
 
-  const handleFinish = (choice) => {
-    if (choice === questions[0].ans) setScore(1);
-    else setScore(0);
+  const handleComplete = (score, total) => {
+    setCompleted(true);
+    showToast(`Quiz finished! You scored ${score}/${total}`);
   };
 
   return (
@@ -18,22 +36,14 @@ const Quiz = () => {
         <h2 className="page-title">
           <FiHelpCircle /> Quick Quiz
         </h2>
-      {score === null ? (
-          <div>
-            <p className="quiz-question">{questions[0].q}</p>
-            <div className="quiz-options">
-          {questions[0].options.map((opt, i) => (
-                <button key={i} onClick={() => handleFinish(i)} className="quiz-option">
-                  {opt}
-                </button>
-          ))}
-            </div>
-        </div>
-      ) : (
-          <h3 className="quiz-result">
-            <FiCheckCircle /> Your Score: {score} / {questions.length}
-          </h3>
-      )}
+        <p style={{ color: 'var(--text-muted)', marginBottom: '1.5rem' }}>
+          Test your web development fundamentals.
+        </p>
+
+        <QuizWidget
+          questions={questions}
+          onComplete={handleComplete}
+        />
       </div>
     </section>
   );

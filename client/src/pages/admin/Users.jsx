@@ -1,7 +1,9 @@
 import React from 'react';
 import { FiTrash2, FiUsers } from 'react-icons/fi';
+import { useToast } from '../../context/ToastContext';
 
 const AdminUsers = () => {
+  const { showToast } = useToast();
   const users = [
     { name: 'Sujal', role: 'Student', email: 'sujal@lpu.com' },
     { name: 'Aman', role: 'Instructor', email: 'aman@lpu.com' },
@@ -32,7 +34,7 @@ const AdminUsers = () => {
                   <span className="role-chip">{u.role}</span>
                 </td>
                 <td>
-                  <button className="btn btn-danger btn-sm">
+                  <button className="btn btn-danger btn-sm" onClick={() => showToast(`User ${u.name} deleted successfully!`, 'success')}>
                     <FiTrash2 /> Delete
                   </button>
                 </td>

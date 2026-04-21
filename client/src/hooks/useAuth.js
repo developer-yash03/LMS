@@ -1,5 +1,7 @@
 import { useContext } from 'react';
-import AuthContext from '../context/auth-context';
+import { useNavigate } from 'react-router-dom';
+import AuthContext from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
@@ -13,26 +15,46 @@ export const useAuth = () => {
 
 export const useAuthActions = () => {
   const { user, login, logout } = useAuth();
+  const navigate = useNavigate();
+  const { showToast } = useToast();
 
-  const handleLogin = async (credentials) => {
-    // MOCK LOGIC: In real app, call your Node.js API here
-    console.log("Logging in with:", credentials);
-    
+  /**
+   * Role Detection Logic:
+   *  - Email starts with "admin"      → admin role
+   *  - Email starts with "instructor" → instructor role
+   *  - Everything else                → student role
+   */
+  const handleLogin = (credentials) => {
+    const email = credentials.email.toLowerCase();
+
+    let role = 'student';
+    if (email.startsWith('admin')) role = 'admin';
+    else if (email.startsWith('instructor')) role = 'instructor';
+
     const mockUser = {
-      id: "123",
-      name: "Sujal",
+      id: Date.now().toString(),
+      name: email.split('@')[0].charAt(0).toUpperCase() + email.split('@')[0].slice(1),
       email: credentials.email,
-      role: "student", // Change to 'instructor' or 'admin' to test dashboards
-      token: "mock-jwt-token"
+      role,
+      token: 'mock-jwt-' + Date.now(),
     };
 
-    localStorage.setItem("token", mockUser.token);
     login(mockUser);
+    showToast(`Welcome back, ${mockUser.name}!`);
+
+    // Navigate to role-appropriate dashboard
+    const dashboardRoutes = {
+      admin: '/admin/dashboard',
+      instructor: '/instructor/dashboard',
+      student: '/my-learning',
+    };
+    navigate(dashboardRoutes[role] || '/');
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
     logout();
+    showToast('Logged out successfully!', 'info');
+    navigate('/');
   };
 
   return { user, handleLogin, handleLogout };
