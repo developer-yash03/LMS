@@ -28,6 +28,8 @@ app.use(cors());
 
 // Routes
 app.use("/api", require("./routes/test"));
+app.use("/api", require("./routes/signup"));
+app.use("/api/auth", require("./routes/signup"));
 app.use("/api/auth", require("./routes/auth"));
 
 // Start server
