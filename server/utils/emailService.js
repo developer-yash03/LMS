@@ -1,17 +1,31 @@
 const nodemailer = require("nodemailer");
 
-const emailConfig = {
-  service: process.env.EMAIL_SERVICE || "gmail",
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASSWORD
+const getTransporter = () => {
+  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
+    console.warn("⚠️  Email credentials not configured. Set EMAIL_USER and EMAIL_PASSWORD in .env file.");
+    return null;
   }
-};
 
-const transporter = nodemailer.createTransporter(emailConfig);
+  const emailConfig = {
+    service: process.env.EMAIL_SERVICE || "gmail",
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASSWORD
+    }
+  };
+
+  return nodemailer.createTransport(emailConfig);
+};
 
 const sendOtpEmail = async (email, otp, name) => {
   try {
+    const transporter = getTransporter();
+
+    if (!transporter) {
+      console.log("📧 Email service not configured. OTP for testing:", otp);
+      return true;
+    }
+
     const mailOptions = {
       from: process.env.EMAIL_USER || "noreply@lms.com",
       to: email,
@@ -31,10 +45,10 @@ const sendOtpEmail = async (email, otp, name) => {
     };
 
     await transporter.sendMail(mailOptions);
-    console.log(`OTP email sent successfully to ${email}`);
+    console.log(`✅ OTP email sent successfully to ${email}`);
     return true;
   } catch (error) {
-    console.error("Error sending OTP email:", error.message);
+    console.error("❌ Error sending OTP email:", error.message);
     throw new Error("Failed to send OTP email");
   }
 };
