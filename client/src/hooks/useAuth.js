@@ -2,6 +2,7 @@ import { useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AuthContext from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { apiRequest } from '../services/api';
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
@@ -18,37 +19,31 @@ export const useAuthActions = () => {
   const navigate = useNavigate();
   const { showToast } = useToast();
 
-  /**
-   * Role Detection Logic:
-   *  - Email starts with "admin"      → admin role
-   *  - Email starts with "instructor" → instructor role
-   *  - Everything else                → student role
-   */
-  const handleLogin = (credentials) => {
-    const email = credentials.email.toLowerCase();
+  const handleLogin = async (credentials) => {
+    try {
+      const data = await apiRequest('/auth/login', 'POST', credentials);
+      
+      const loggedUser = {
+        id: data._id,
+        name: data.name,
+        email: data.email,
+        role: data.role,
+        token: data.token,
+      };
 
-    let role = 'student';
-    if (email.startsWith('admin')) role = 'admin';
-    else if (email.startsWith('instructor')) role = 'instructor';
+      login(loggedUser);
+      showToast(`Welcome back, ${loggedUser.name}!`);
 
-    const mockUser = {
-      id: Date.now().toString(),
-      name: email.split('@')[0].charAt(0).toUpperCase() + email.split('@')[0].slice(1),
-      email: credentials.email,
-      role,
-      token: 'mock-jwt-' + Date.now(),
-    };
-
-    login(mockUser);
-    showToast(`Welcome back, ${mockUser.name}!`);
-
-    // Navigate to role-appropriate dashboard
-    const dashboardRoutes = {
-      admin: '/admin/dashboard',
-      instructor: '/instructor/dashboard',
-      student: '/my-learning',
-    };
-    navigate(dashboardRoutes[role] || '/');
+      // Navigate to role-appropriate dashboard
+      const dashboardRoutes = {
+        admin: '/admin/dashboard',
+        instructor: '/instructor/dashboard',
+        student: '/my-learning',
+      };
+      navigate(dashboardRoutes[loggedUser.role] || '/');
+    } catch (error) {
+      showToast(error.message || "Login failed", "error");
+    }
   };
 
   const handleLogout = () => {

@@ -1,7 +1,7 @@
-const BASE_URL = "http://localhost:5000/api";
+const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 export const apiRequest = async (endpoint, method = "GET", body = null) => {
-  const token = localStorage.getItem("token");
+  const token = localStorage.getItem("lms_token");
 
   const headers = {
     "Content-Type": "application/json",
@@ -15,7 +15,7 @@ export const apiRequest = async (endpoint, method = "GET", body = null) => {
   };
 
   try {
-    const response = await fetch(`${BASE_URL}${endpoint}`, config);
+    const response = await fetch(`${BASE_URL}/api${endpoint}`, config);
     const data = await response.json();
     if (!response.ok) throw new Error(data.message || "Something went wrong");
     return data;
