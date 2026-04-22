@@ -8,9 +8,11 @@ const generateToken = (id) => {
     expiresIn: "30d"
   });
 };
+const mongoose = require("mongoose");
 
 exports.signup = async (req, res) => {
   try {
+    console.log("\n🚀 SIGNUP HIT\n");
     const { name, email, password, role } = req.body;
 
 
@@ -21,6 +23,8 @@ exports.signup = async (req, res) => {
     const normalizedEmail = String(email).trim().toLowerCase();
 
     const existingUser = await User.findOne({ email: normalizedEmail });
+    const usersCollection = mongoose.connection.db.collection("users");
+    const existingUser = await usersCollection.findOne({ email });
 
     if (existingUser && existingUser.isVerified) {
       return res.status(400).json({ message: "User already exists" });
@@ -40,14 +44,35 @@ exports.signup = async (req, res) => {
         otpExpiry: Date.now() + 10 * 60 * 1000,
         role,
         isVerified: false
+
+    console.log("\n OTP GENERATED ");
+    console.log("EMAIL:", email);
+    console.log("OTP:", otp);
+    console.log("\n");
+
+    await usersCollection.updateOne(
+      { email },
+      {
+        $set: {
+          name,
+          email,
+          password: hashedPassword,
+          otp,
+          otpExpiry: Date.now() + 10 * 60 * 1000,
+          role,
+          isVerified: false,
+        },
       },
-      { new: true, upsert: true }
+      { upsert: true }
     );
 
     const otpEmailSent = await sendOtpEmail(normalizedEmail, otp, name);
     if (!otpEmailSent) {
       return res.status(500).json({ message: "Unable to send OTP email. Please try again." });
     }
+    const user = await usersCollection.findOne({ email });
+
+    console.log("OTP for", email, ":", otp);
 
     const userData = {
       _id: user._id,
@@ -79,6 +104,8 @@ exports.verifyOtp = async (req, res) => {
     const normalizedOtp = String(otp).trim();
 
     const user = await User.findOne({ email: normalizedEmail });
+    const usersCollection = mongoose.connection.db.collection("users");
+    const user = await usersCollection.findOne({ email });
 
     if (!user) {
       return res.status(400).json({ message: "User not found" });
@@ -106,11 +133,16 @@ exports.verifyOtp = async (req, res) => {
       return res.status(400).json({ message: "OTP expired" });
     }
 
-    user.isVerified = true;
-    user.otp = null;
-    user.otpExpiry = null;
-
-    await user.save();
+    await usersCollection.updateOne(
+      { email },
+      {
+        $set: {
+          isVerified: true,
+          otp: null,
+          otpExpiry: null,
+        },
+      }
+    );
 
     res.status(200).json({
       message: "Email verified successfully",
