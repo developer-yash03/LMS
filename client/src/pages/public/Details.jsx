@@ -6,6 +6,17 @@ import { useCourseContext } from '../../context/CourseContext';
 import { useAuth } from '../../hooks/useAuth';
 import BackButton from '../../components/common/BackButton';
 import { useToast } from '../../context/ToastContext';
+import { apiRequest } from '../../services/api';
+
+const loadScript = (src) => {
+  return new Promise((resolve) => {
+    const script = document.createElement("script");
+    script.src = src;
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+};
 
 const Details = () => {
   const { id } = useParams();
@@ -30,7 +41,7 @@ const Details = () => {
   const enrolled = isEnrolled(singleCourse.id);
   const progress = enrolled ? getProgress(singleCourse.id) : 0;
 
-  const handleEnroll = () => {
+  const handleEnroll = async () => {
     if (!user) {
       showToast('Please log in to enroll!', 'info');
       navigate('/login');
@@ -42,9 +53,66 @@ const Details = () => {
       return;
     }
 
-    enrollInCourse(singleCourse.id);
-    showToast('Successfully enrolled in the course!');
-    navigate('/my-learning');
+    if (singleCourse.price === 0) {
+      enrollInCourse(singleCourse.id);
+      showToast('Successfully enrolled in the course!', 'success');
+      navigate('/my-learning');
+      return;
+    }
+
+    const res = await loadScript("https://checkout.razorpay.com/v1/checkout.js");
+
+    if (!res) {
+      showToast("Razorpay SDK failed to load. Are you online?", "error");
+      return;
+    }
+
+    try {
+      const orderResponse = await apiRequest("/payment/create-order", "POST", { courseId: singleCourse.id });
+      
+      const options = {
+        key: orderResponse.keyId,
+        amount: orderResponse.amount,
+        currency: orderResponse.currency,
+        name: "LMS Platform",
+        description: `Enrollment for ${singleCourse.title}`,
+        order_id: orderResponse.orderId,
+        handler: async function (response) {
+          try {
+            const verifyData = {
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+            };
+
+            const verifyRes = await apiRequest("/payment/verify", "POST", verifyData);
+            
+            if(verifyRes.message) {
+               enrollInCourse(singleCourse.id);
+               showToast('Successfully enrolled in the course!', 'success');
+               navigate('/my-learning');
+            } else {
+               showToast(verifyRes.error || "Payment verification failed", "error");
+            }
+          } catch(err) {
+            showToast("Payment verification failed", "error");
+          }
+        },
+        prefill: {
+          name: user?.name || "Student",
+          email: user?.email || "",
+        },
+        theme: {
+          color: "#0056D2",
+        },
+      };
+
+      const paymentObject = new window.Razorpay(options);
+      paymentObject.open();
+    } catch (error) {
+      console.error(error);
+      showToast("Something went wrong with the payment", "error");
+    }
   };
 
   return (

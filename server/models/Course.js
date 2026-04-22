@@ -1,21 +1,17 @@
 const mongoose = require("mongoose");
 
-const userSchema = new mongoose.Schema({
-  name: String,
-  email: { type: String, unique: true },
-  password: String,
-
-  role: {
-    type: String,
-    enum: ["student", "instructor", "admin"],
-    default: "student"
+const courseSchema = new mongoose.Schema({
+  title: { type: String, required: true },
+  description: { type: String },
+  price: { type: Number, required: true, default: 0 },
+  instructor: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: true
   },
-
-  enrolledCourses: [
-    { type: mongoose.Schema.Types.ObjectId, ref: "Course" }
-  ],
-
+  thumbnail: { type: String },
+  modules: [{ type: mongoose.Schema.Types.ObjectId, ref: "Module" }],
   createdAt: { type: Date, default: Date.now }
 });
 
-module.exports = mongoose.model("User", userSchema);
+module.exports = mongoose.model("Course", courseSchema);
