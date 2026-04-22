@@ -28,6 +28,12 @@ const userSchema = new mongoose.Schema({
     { type: mongoose.Schema.Types.ObjectId, ref: "Course" }
   ],
 
+  otp: String,
+  otpExpiry: Date,
+  isVerified: { type: Boolean, default: false },
+  otpAttempts: { type: Number, default: 0 },
+  otpCooldown: Date,
+
   createdAt: { type: Date, default: Date.now }
 });
 
