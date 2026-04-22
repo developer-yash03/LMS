@@ -1,6 +1,7 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
+const { sendOtpEmail } = require("../utils/emailService");
 
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
@@ -43,7 +44,10 @@ exports.signup = async (req, res) => {
       { new: true, upsert: true }
     );
 
-    console.log("OTP for", normalizedEmail, ":", otp);
+    const otpEmailSent = await sendOtpEmail(normalizedEmail, otp, name);
+    if (!otpEmailSent) {
+      return res.status(500).json({ message: "Unable to send OTP email. Please try again." });
+    }
 
     const userData = {
       _id: user._id,
@@ -80,6 +84,20 @@ exports.verifyOtp = async (req, res) => {
       return res.status(400).json({ message: "User not found" });
     }
 
+    if (user.isVerified) {
+      return res.status(200).json({
+        message: "Email already verified",
+        user: {
+          _id: user._id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          isVerified: user.isVerified
+        },
+        token: generateToken(user._id)
+      });
+    }
+
     if (String(user.otp).trim() !== normalizedOtp) {
       return res.status(400).json({ message: "Invalid OTP" });
     }
@@ -108,5 +126,40 @@ exports.verifyOtp = async (req, res) => {
 
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+};
+
+exports.resendOtp = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ message: "Email is required" });
+    }
+
+    const normalizedEmail = String(email).trim().toLowerCase();
+    const user = await User.findOne({ email: normalizedEmail });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    if (user.isVerified) {
+      return res.status(400).json({ message: "User already verified" });
+    }
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    user.otp = otp;
+    user.otpExpiry = Date.now() + 10 * 60 * 1000;
+    await user.save();
+
+    const otpEmailSent = await sendOtpEmail(normalizedEmail, otp, user.name);
+    if (!otpEmailSent) {
+      return res.status(500).json({ message: "Unable to resend OTP right now. Please try again." });
+    }
+
+    return res.status(200).json({ message: "OTP resent successfully" });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
   }
 };
