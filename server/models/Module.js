@@ -1,3 +1,5 @@
+const mongoose = require("mongoose");
+
 const moduleSchema = new mongoose.Schema({
   title: String,
 

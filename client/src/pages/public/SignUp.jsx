@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { isValidEmail } from '../../utils/authValidation';
+import { apiRequest } from '../../services/api';
+import { useToast } from '../../context/ToastContext';
 import './Auth.css';
 
 const SignUp = () => {
   const navigate = useNavigate();
+  const { showToast } = useToast();
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -19,7 +22,7 @@ const SignUp = () => {
   const showEmailError = emailTouched && trimmedEmail.length > 0 && !emailValid;
   const formValid = trimmedName.length > 1 && emailValid && password.length >= 6 && Boolean(role);
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
     if (!formValid) {
       return;
@@ -27,22 +30,26 @@ const SignUp = () => {
 
     setLoading(true);
 
-    // Mock sign-up request; replace with a backend call later.
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      await apiRequest('/auth/signup', 'POST', {
+        name: trimmedName,
+        email: trimmedEmail,
+        password,
+        role,
+      });
+
+      sessionStorage.setItem('pending_email', trimmedEmail);
+      showToast('OTP sent to your email', 'success');
       navigate('/verify-otp', {
         state: {
           email: trimmedEmail,
-          pendingUser: {
-            id: Date.now().toString(),
-            name: trimmedName,
-            email: trimmedEmail,
-            role,
-            token: `mock-token-${Date.now()}`,
-          },
         },
       });
-    }, 1400);
+    } catch (error) {
+      showToast(error.message || 'Signup failed', 'error');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

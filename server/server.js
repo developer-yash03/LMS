@@ -38,6 +38,7 @@ const connectDB = async () => {
 app.use("/api", require("./routes/test"));
 app.use("/api/signup", require("./routes/signup"));
 app.use("/api/auth", require("./routes/auth"));
+app.use("/api/courses", require("./routes/course"));
 
 // Start server ONLY after DB connects
 const PORT = process.env.PORT || 5000;

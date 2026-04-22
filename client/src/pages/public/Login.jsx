@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../hooks/useAuth';
-import { isValidEmail, getDashboardRoute, inferRoleFromEmail } from '../../utils/authValidation';
+import { Link } from 'react-router-dom';
+import { useAuthActions } from '../../hooks/useAuth';
+import { isValidEmail } from '../../utils/authValidation';
 import './Auth.css';
 
 const Login = () => {
-  const navigate = useNavigate();
-  const { login } = useAuth();
+  const { handleLogin } = useAuthActions();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -18,7 +17,7 @@ const Login = () => {
   const showEmailError = emailTouched && trimmedEmail.length > 0 && !emailValid;
   const formValid = emailValid && password.length >= 6;
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
     if (!formValid) {
       return;
@@ -26,21 +25,14 @@ const Login = () => {
 
     setLoading(true);
 
-    // Mock login request; replace this setTimeout with real API integration later.
-    setTimeout(() => {
-      const role = inferRoleFromEmail(trimmedEmail);
-      const mockUser = {
-        id: Date.now().toString(),
-        name: trimmedEmail.split('@')[0] || 'Learner',
+    try {
+      await handleLogin({
         email: trimmedEmail,
-        role,
-        token: `mock-token-${Date.now()}`,
-      };
-
-      login(mockUser);
+        password,
+      });
+    } finally {
       setLoading(false);
-      navigate(getDashboardRoute(role));
-    }, 1200);
+    }
   };
 
   return (
