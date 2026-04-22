@@ -1,6 +1,6 @@
-import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { FiSearch, FiLogIn, FiLogOut } from 'react-icons/fi';
+import React, { useEffect, useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { FiLogIn, FiLogOut, FiMenu, FiX } from 'react-icons/fi';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../context/ToastContext';
 
@@ -35,7 +35,13 @@ const LMSLogo = () => (
 const Navbar = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const { showToast } = useToast();
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [location.pathname]);
 
   const handleLogout = () => {
     // 1) Clear state first
@@ -52,16 +58,22 @@ const Navbar = () => {
 
   return (
     <nav className="navbar-top">
-      <Link to="/" className="navbar-brand" aria-label="LMS Pro Home">
-        <LMSLogo />
-      </Link>
+      <div className="navbar-row">
+        <Link to="/" className="navbar-brand" aria-label="LMS Pro Home">
+          <LMSLogo />
+        </Link>
 
-      <div className="navbar-search">
-        <FiSearch color="var(--text-muted)" />
-        <input type="text" placeholder="What do you want to learn?" />
+        <button
+          className="navbar-toggle"
+          type="button"
+          onClick={() => setMenuOpen((prev) => !prev)}
+          aria-label="Toggle navigation"
+        >
+          {menuOpen ? <FiX size={20} /> : <FiMenu size={20} />}
+        </button>
       </div>
 
-      <div className="navbar-actions">
+      <div className={`navbar-actions ${menuOpen ? 'mobile-open' : ''}`}>
         <Link to="/browse" className="nav-link">
           Explore
         </Link>
@@ -70,26 +82,20 @@ const Navbar = () => {
             <Link to="/my-learning" className="nav-link">
               My Learning
             </Link>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              <img
-                src={`https://ui-avatars.com/api/?name=${encodeURIComponent(user.name || 'User')}&background=0056D2&color=fff&size=32&font-size=0.45&bold=true`}
-                alt="User Avatar"
-                className="avatar"
-              />
-              <span style={{ fontWeight: '600', fontSize: '0.9rem' }}>{user.name}</span>
-            </div>
-            <button
-              onClick={handleLogout}
-              className="btn btn-outline"
-              style={{ padding: '0.4rem 0.85rem', fontSize: '0.9rem' }}
-            >
+            <span className="nav-user-name">{user.name}</span>
+            <button onClick={handleLogout} className="btn btn-outline nav-button">
               <FiLogOut size={15} /> Logout
             </button>
           </>
         ) : (
-          <Link to="/login" className="btn btn-primary" style={{ padding: '0.5rem 1.5rem' }}>
-            <FiLogIn /> Log In
-          </Link>
+          <>
+            <Link to="/signup" className="nav-link">
+              Sign Up
+            </Link>
+            <Link to="/login" className="btn btn-primary nav-button">
+              <FiLogIn /> Log In
+            </Link>
+          </>
         )}
       </div>
     </nav>

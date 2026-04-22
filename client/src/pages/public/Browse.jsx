@@ -1,16 +1,20 @@
-import React, { useState } from 'react';
-import { FiSearch, FiFilter } from 'react-icons/fi';
+import React, { useEffect, useState } from 'react';
+import { FiSearch } from 'react-icons/fi';
+import { useSearchParams } from 'react-router-dom';
 import { useCourse } from '../../hooks/useCourse';
 import SkeletonCard from '../../components/common/SkeletonCard';
 import CourseCard from '../../components/course/CourseCard';
 
 const Browse = () => {
   const { courses, loading } = useCourse();
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchParams] = useSearchParams();
+  const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
   const [categoryFilter, setCategoryFilter] = useState('All');
   const [priceFilter, setPriceFilter] = useState('All');
 
-
+  useEffect(() => {
+    setSearchTerm(searchParams.get('search') || '');
+  }, [searchParams]);
 
   const filteredCourses = courses.filter((course) => {
     const matchesSearch = course.title.toLowerCase().includes(searchTerm.toLowerCase());
@@ -29,39 +33,56 @@ const Browse = () => {
       </div>
 
       <div className="filters-bar">
-        <div style={{ display: 'flex', alignItems: 'center', background: 'var(--bg-main)', padding: '0.5rem 1rem', borderRadius: '4px', flex: 1, minWidth: '250px' }}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            background: 'var(--bg-main)',
+            padding: '0.5rem 1rem',
+            borderRadius: '4px',
+            flex: 1,
+            minWidth: '250px',
+          }}
+        >
           <FiSearch color="var(--text-muted)" />
           <input
             type="text"
             placeholder="Search for courses, skills, or videos"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            style={{ border: 'none', background: 'transparent', outline: 'none', marginLeft: '0.5rem', width: '100%', fontSize: '0.95rem' }}
+            style={{
+              border: 'none',
+              background: 'transparent',
+              outline: 'none',
+              marginLeft: '0.5rem',
+              width: '100%',
+              fontSize: '0.95rem',
+            }}
           />
         </div>
 
-        <select
-          className="filter-select"
-          value={categoryFilter}
-          onChange={(e) => setCategoryFilter(e.target.value)}
-        >
+        <select className="filter-select" value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}>
           <option value="All">All Topics</option>
           <option value="Development">Development</option>
           <option value="Design">Design</option>
           <option value="Database">Database</option>
         </select>
 
-        <select
-          className="filter-select"
-          value={priceFilter}
-          onChange={(e) => setPriceFilter(e.target.value)}
-        >
+        <select className="filter-select" value={priceFilter} onChange={(e) => setPriceFilter(e.target.value)}>
           <option value="All">Free & Paid</option>
           <option value="Free">Free</option>
           <option value="Paid">Paid</option>
         </select>
-        
-        <button className="btn btn-outline" style={{ padding: '0.5rem 1rem' }} onClick={() => { setSearchTerm(''); setCategoryFilter('All'); setPriceFilter('All'); }}>
+
+        <button
+          className="btn btn-outline"
+          style={{ padding: '0.5rem 1rem' }}
+          onClick={() => {
+            setSearchTerm('');
+            setCategoryFilter('All');
+            setPriceFilter('All');
+          }}
+        >
           Clear
         </button>
       </div>
