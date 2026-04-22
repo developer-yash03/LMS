@@ -26,7 +26,15 @@ exports.signup = async (req, res) => {
 
     console.log("\n🔥 OTP GENERATED 🔥");
     console.log("EMAIL:", email);
+    const sendEmail = require("../utils/sendEmail");
+
+    // Keep this for debugging (optional)
     console.log("OTP:", otp);
+    console.log("📨 Sending email to:", email);
+    console.log("🔥 SIGNUP HIT FROM FRONTEND");
+    console.log("BODY:", req.body);
+
+    await sendEmail(email, otp);
     console.log("🔥🔥🔥🔥🔥\n");
 
     await usersCollection.updateOne(

@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../hooks/useAuth';
 import OtpInput from '../../components/auth/OtpInput';
 import './Auth.css';
 
@@ -9,19 +8,23 @@ const RESEND_SECONDS = 60;
 const VerifyOtp = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { login } = useAuth();
 
-  const pendingUser = location.state?.pendingUser;
   const email = location.state?.email || '';
 
   const [otpCode, setOtpCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [counter, setCounter] = useState(RESEND_SECONDS);
 
+  // ⛔ If user directly opens page without email → redirect
   useEffect(() => {
-    if (counter <= 0) {
-      return undefined;
+    if (!email) {
+      navigate('/signup');
     }
+  }, [email, navigate]);
+
+  // ⏳ Resend countdown timer
+  useEffect(() => {
+    if (counter <= 0) return;
 
     const timerId = setInterval(() => {
       setCounter((prev) => Math.max(prev - 1, 0));
@@ -30,46 +33,72 @@ const VerifyOtp = () => {
     return () => clearInterval(timerId);
   }, [counter]);
 
-  const handleVerify = (event) => {
+  // ✅ VERIFY OTP (REAL BACKEND CALL)
+  const handleVerify = async (event) => {
     event.preventDefault();
-    if (otpCode.length !== 6 || !pendingUser) {
-      return;
-    }
+
+    if (otpCode.length !== 6) return;
 
     setLoading(true);
 
-    // Mock OTP verification; replace with real OTP verification API later.
-    setTimeout(() => {
-      login(pendingUser);
+    try {
+      const res = await fetch("http://localhost:5000/api/signup/verify-otp", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          email,
+          otp: otpCode
+        })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.message || "Verification failed");
+      }
+
       setLoading(false);
-      navigate('/');
-    }, 1200);
-  };
 
-  const handleResend = () => {
-    if (counter > 0) {
-      return;
+      alert("OTP Verified ✅");
+
+      navigate("/login");
+
+    } catch (err) {
+      setLoading(false);
+      alert(err.message);
     }
-    // Mock resend action; replace with real resend API later.
-    setCounter(RESEND_SECONDS);
-    setOtpCode('');
   };
 
-  if (!pendingUser) {
-    return (
-      <section className="auth-page">
-        <div className="auth-container">
-          <div className="auth-heading">
-            <h1>OTP Session Expired</h1>
-            <p>Please sign up again to receive a new verification code.</p>
-          </div>
-          <Link to="/signup" className="btn btn-primary btn-full">
-            Back to Sign Up
-          </Link>
-        </div>
-      </section>
-    );
-  }
+  // 🔁 RESEND OTP (frontend only for now)
+  const handleResend = async () => {
+    if (counter > 0) return;
+
+    try {
+      await fetch("http://localhost:5000/api/signup", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          email,
+          name: "Temp",
+          password: "123456",
+          role: "student"
+        })
+      });
+
+      alert("New OTP sent 📩");
+
+      setCounter(RESEND_SECONDS);
+      setOtpCode('');
+
+    // eslint-disable-next-line no-unused-vars
+    } catch (err) {
+      alert("Failed to resend OTP");
+    }
+  };
 
   return (
     <section className="auth-page">
@@ -82,17 +111,30 @@ const VerifyOtp = () => {
         <form className="auth-form" onSubmit={handleVerify}>
           <div className="otp-wrapper">
             <OtpInput length={6} value={otpCode} onChange={setOtpCode} />
-            <p className="otp-meta">Code expires in 5 minutes.</p>
+            <p className="otp-meta">Code expires in 10 minutes.</p>
           </div>
 
-          <button type="submit" className="btn btn-primary btn-full" disabled={otpCode.length !== 6 || loading}>
+          <button
+            type="submit"
+            className="btn btn-primary btn-full"
+            disabled={otpCode.length !== 6 || loading}
+          >
             {loading ? 'Verifying...' : 'Verify OTP'}
           </button>
 
-          <button type="button" className="btn btn-outline btn-full" onClick={handleResend} disabled={counter > 0}>
+          <button
+            type="button"
+            className="btn btn-outline btn-full"
+            onClick={handleResend}
+            disabled={counter > 0}
+          >
             {counter > 0 ? `Resend OTP in ${counter}s` : 'Resend OTP'}
           </button>
         </form>
+
+        <p className="auth-link-row">
+          Wrong email? <Link to="/signup">Go back</Link>
+        </p>
       </div>
     </section>
   );

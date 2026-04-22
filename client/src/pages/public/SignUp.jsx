@@ -19,7 +19,7 @@ const SignUp = () => {
   const showEmailError = emailTouched && trimmedEmail.length > 0 && !emailValid;
   const formValid = trimmedName.length > 1 && emailValid && password.length >= 6 && Boolean(role);
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
     if (!formValid) {
       return;
@@ -27,22 +27,41 @@ const SignUp = () => {
 
     setLoading(true);
 
-    // Mock sign-up request; replace with a backend call later.
-    setTimeout(() => {
+    try {
+      const res = await fetch("http://localhost:5000/api/signup", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          name: trimmedName,
+          email: trimmedEmail,
+          password,
+          role
+        })
+      });
+
+      const data = await res.json();
+
+      console.log("SIGNUP RESPONSE:", data);
+
+      if (!res.ok) {
+        throw new Error(data.message || "Signup failed");
+      }
+
       setLoading(false);
+
       navigate('/verify-otp', {
         state: {
-          email: trimmedEmail,
-          pendingUser: {
-            id: Date.now().toString(),
-            name: trimmedName,
-            email: trimmedEmail,
-            role,
-            token: `mock-token-${Date.now()}`,
-          },
-        },
+          email: trimmedEmail
+        }
       });
-    }, 1400);
+
+    } catch (err) {
+      setLoading(false);
+      console.error("Signup error:", err.message);
+      alert(err.message);
+    }
   };
 
   return (
