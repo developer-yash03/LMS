@@ -37,6 +37,8 @@ const connectDB = async () => {
 // Routes
 app.use("/api/signup", require("./routes/signup")); // FIRST
 app.use("/api/auth", require("./routes/auth"));
+
+app.use("/api/courses", require("./routes/course"));
 app.use("/api", require("./routes/test")); // LAST
 
 // Start server ONLY after DB connects

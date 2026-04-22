@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import OtpInput from '../../components/auth/OtpInput';
+import { apiRequest } from '../../services/api';
+import { useToast } from '../../context/ToastContext';
 import './Auth.css';
 
 const RESEND_SECONDS = 60;
@@ -33,11 +35,11 @@ const VerifyOtp = () => {
     return () => clearInterval(timerId);
   }, [counter]);
 
-  // ✅ VERIFY OTP (REAL BACKEND CALL)
   const handleVerify = async (event) => {
     event.preventDefault();
-
-    if (otpCode.length !== 6) return;
+    if (otpCode.length !== 6 || !email) {
+      return;
+    }
 
     setLoading(true);
 
@@ -106,6 +108,20 @@ const VerifyOtp = () => {
         <div className="auth-heading">
           <h1>Verify OTP</h1>
           <p>Enter the 6-digit code sent to {email || 'your email'}.</p>
+        </div>
+
+        <div className="form-group" style={{ marginBottom: '0.75rem' }}>
+          <label htmlFor="verify-email" className="form-label">
+            Email
+          </label>
+          <input
+            id="verify-email"
+            type="email"
+            className="form-input"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            placeholder="name@example.com"
+          />
         </div>
 
         <form className="auth-form" onSubmit={handleVerify}>

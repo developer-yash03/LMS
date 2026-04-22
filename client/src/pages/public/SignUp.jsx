@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { isValidEmail } from '../../utils/authValidation';
+import { apiRequest } from '../../services/api';
+import { useToast } from '../../context/ToastContext';
 import './Auth.css';
 
 const SignUp = () => {
   const navigate = useNavigate();
+  const { showToast } = useToast();
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
