@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { FiSearch } from 'react-icons/fi';
 import { useSearchParams } from 'react-router-dom';
 import { apiRequest } from '../../services/api';

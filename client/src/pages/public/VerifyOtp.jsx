@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../hooks/useAuth';
 import OtpInput from '../../components/auth/OtpInput';
 import { apiRequest } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
@@ -11,20 +10,23 @@ const RESEND_SECONDS = 60;
 const VerifyOtp = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { login } = useAuth();
-  const { showToast } = useToast();
 
-  const emailFromState = location.state?.email || '';
-  const [email, setEmail] = useState(emailFromState || sessionStorage.getItem('pending_email') || '');
+  const email = location.state?.email || '';
 
   const [otpCode, setOtpCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [counter, setCounter] = useState(RESEND_SECONDS);
 
+  // ⛔ If user directly opens page without email → redirect
   useEffect(() => {
-    if (counter <= 0) {
-      return undefined;
+    if (!email) {
+      navigate('/signup');
     }
+  }, [email, navigate]);
+
+  // ⏳ Resend countdown timer
+  useEffect(() => {
+    if (counter <= 0) return;
 
     const timerId = setInterval(() => {
       setCounter((prev) => Math.max(prev - 1, 0));
@@ -42,61 +44,63 @@ const VerifyOtp = () => {
     setLoading(true);
 
     try {
-      const response = await apiRequest('/auth/verify-otp', 'POST', {
-        email,
-        otp: otpCode,
+      const res = await fetch("http://localhost:5000/api/signup/verify-otp", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          email,
+          otp: otpCode
+        })
       });
 
-      login({
-        ...response.user,
-        token: response.token,
-      });
+      const data = await res.json();
 
-      sessionStorage.removeItem('pending_email');
-      showToast('Email verified successfully', 'success');
-      navigate('/browse');
-    } catch (error) {
-      showToast(error.message || 'OTP verification failed', 'error');
-    } finally {
+      if (!res.ok) {
+        throw new Error(data.message || "Verification failed");
+      }
+
       setLoading(false);
+
+      alert("OTP Verified ✅");
+
+      navigate("/login");
+
+    } catch (err) {
+      setLoading(false);
+      alert(err.message);
     }
   };
 
+  // 🔁 RESEND OTP (frontend only for now)
   const handleResend = async () => {
-    if (counter > 0) {
-      return;
-    }
-
-    if (!email) {
-      showToast('Email not found. Please sign up again.', 'error');
-      return;
-    }
+    if (counter > 0) return;
 
     try {
-      await apiRequest('/auth/resend-otp', 'POST', { email });
+      await fetch("http://localhost:5000/api/signup", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          email,
+          name: "Temp",
+          password: "123456",
+          role: "student"
+        })
+      });
+
+      alert("New OTP sent 📩");
+
       setCounter(RESEND_SECONDS);
       setOtpCode('');
-      showToast('OTP resent to your email', 'success');
-    } catch (error) {
-      showToast(error.message || 'Failed to resend OTP', 'error');
+
+    // eslint-disable-next-line no-unused-vars
+    } catch (err) {
+      alert("Failed to resend OTP");
     }
   };
-
-  if (!email) {
-    return (
-      <section className="auth-page">
-        <div className="auth-container">
-          <div className="auth-heading">
-            <h1>OTP Session Expired</h1>
-            <p>Please sign up again to receive a new verification code.</p>
-          </div>
-          <Link to="/signup" className="btn btn-primary btn-full">
-            Back to Sign Up
-          </Link>
-        </div>
-      </section>
-    );
-  }
 
   return (
     <section className="auth-page">
@@ -126,14 +130,27 @@ const VerifyOtp = () => {
             <p className="otp-meta">Code expires in 10 minutes.</p>
           </div>
 
-          <button type="submit" className="btn btn-primary btn-full" disabled={otpCode.length !== 6 || loading}>
+          <button
+            type="submit"
+            className="btn btn-primary btn-full"
+            disabled={otpCode.length !== 6 || loading}
+          >
             {loading ? 'Verifying...' : 'Verify OTP'}
           </button>
 
-          <button type="button" className="btn btn-outline btn-full" onClick={handleResend} disabled={counter > 0}>
+          <button
+            type="button"
+            className="btn btn-outline btn-full"
+            onClick={handleResend}
+            disabled={counter > 0}
+          >
             {counter > 0 ? `Resend OTP in ${counter}s` : 'Resend OTP'}
           </button>
         </form>
+
+        <p className="auth-link-row">
+          Wrong email? <Link to="/signup">Go back</Link>
+        </p>
       </div>
     </section>
   );

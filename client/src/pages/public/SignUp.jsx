@@ -31,24 +31,39 @@ const SignUp = () => {
     setLoading(true);
 
     try {
-      await apiRequest('/auth/signup', 'POST', {
-        name: trimmedName,
-        email: trimmedEmail,
-        password,
-        role,
+      const res = await fetch("http://localhost:5000/api/signup", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          name: trimmedName,
+          email: trimmedEmail,
+          password,
+          role
+        })
       });
 
-      sessionStorage.setItem('pending_email', trimmedEmail);
-      showToast('OTP sent to your email', 'success');
+      const data = await res.json();
+
+      console.log("SIGNUP RESPONSE:", data);
+
+      if (!res.ok) {
+        throw new Error(data.message || "Signup failed");
+      }
+
+      setLoading(false);
+
       navigate('/verify-otp', {
         state: {
-          email: trimmedEmail,
-        },
+          email: trimmedEmail
+        }
       });
-    } catch (error) {
-      showToast(error.message || 'Signup failed', 'error');
-    } finally {
+
+    } catch (err) {
       setLoading(false);
+      console.error("Signup error:", err.message);
+      alert(err.message);
     }
   };
 
