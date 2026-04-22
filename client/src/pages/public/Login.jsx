@@ -1,82 +1,111 @@
 import React, { useState } from 'react';
-import { FiLogIn, FiLock, FiMail, FiUser, FiUserPlus } from 'react-icons/fi';
-import { useAuthActions } from '../../hooks/useAuth';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../hooks/useAuth';
+import { isValidEmail, getDashboardRoute, inferRoleFromEmail } from '../../utils/authValidation';
+import './Auth.css';
 
 const Login = () => {
-  const [isLogin, setIsLogin] = useState(true);
+  const navigate = useNavigate();
+  const { login } = useAuth();
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
-  const { handleLogin } = useAuthActions();
+  const [loading, setLoading] = useState(false);
+  const [emailTouched, setEmailTouched] = useState(false);
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    handleLogin({ email, password });
+  const trimmedEmail = email.trim();
+  const emailValid = isValidEmail(trimmedEmail);
+  const showEmailError = emailTouched && trimmedEmail.length > 0 && !emailValid;
+  const formValid = emailValid && password.length >= 6;
+
+  const handleSubmit = (event) => {
+    event.preventDefault();
+    if (!formValid) {
+      return;
+    }
+
+    setLoading(true);
+
+    // Mock login request; replace this setTimeout with real API integration later.
+    setTimeout(() => {
+      const role = inferRoleFromEmail(trimmedEmail);
+      const mockUser = {
+        id: Date.now().toString(),
+        name: trimmedEmail.split('@')[0] || 'Learner',
+        email: trimmedEmail,
+        role,
+        token: `mock-token-${Date.now()}`,
+      };
+
+      login(mockUser);
+      setLoading(false);
+      navigate(getDashboardRoute(role));
+    }, 1200);
   };
 
   return (
-    <div className="auth-shell">
-      <div className="auth-card">
-        <h2 className="auth-title">
-          {isLogin ? <FiLogIn /> : <FiUserPlus />} {isLogin ? 'Welcome Back' : 'Sign Up'}
-        </h2>
-        <p style={{ color: 'var(--text-muted)', marginBottom: '1.5rem' }}>
-          {isLogin ? 'Log in to continue your learning journey.' : 'Create an account to start learning.'}
-        </p>
+    <section className="auth-page">
+      <Link to="/" className="auth-brand-logo">
+        LMS <span>Pro</span>
+      </Link>
 
-        <form onSubmit={handleSubmit} className="auth-form">
-          {!isLogin && (
-            <label className="field">
-              <FiUser />
-              <input
-                type="text"
-                placeholder="Full Name"
-                required
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-              />
-            </label>
-          )}
-
-          <label className="field">
-            <FiMail />
-            <input
-              type="email"
-              placeholder="Email Address"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-          </label>
-
-          <label className="field">
-            <FiLock />
-            <input
-              type="password"
-              placeholder="Password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-          </label>
-
-          <button type="submit" className="btn btn-primary" style={{ justifyContent: 'center', width: '100%' }}>
-            {isLogin ? 'Login' : 'Create Account'}
-          </button>
-        </form>
-
-        <div className="role-message">
-          <strong>Role Detection Active:</strong> Logging in with <code>admin@...</code> redirects to Admin Dashboard. Using <code>instructor@...</code> goes to Instructor Dashboard. Otherwise, you'll enter the Student area.
+      <div className="auth-container">
+        <div className="auth-heading">
+          <h1>Sign In</h1>
+          <p>Welcome Back to LMS Pro.</p>
         </div>
 
-        <p className="auth-switch">
-          {isLogin ? "Don't have an account? " : 'Already have an account? '}
-          <button type="button" onClick={() => setIsLogin(!isLogin)}>
-            {isLogin ? 'Sign Up' : 'Login'}
-          </button>
+        <form className="auth-form" onSubmit={handleSubmit} noValidate>
+          <div className="form-group">
+            <label htmlFor="login-email" className="form-label">
+              Email
+            </label>
+            <input
+              id="login-email"
+              type="email"
+              className="form-input"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              onBlur={() => setEmailTouched(true)}
+              placeholder="name@example.com"
+              required
+            />
+            {showEmailError && <p className="text-error">Please enter a valid email address.</p>}
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="login-password" className="form-label">
+              Password
+            </label>
+            <input
+              id="login-password"
+              type="password"
+              className="form-input"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              placeholder="Enter your password"
+              required
+            />
+          </div>
+
+          <div className="auth-actions">
+            <button type="submit" className="btn btn-primary btn-full" disabled={!formValid || loading}>
+              {loading ? 'Signing in...' : 'Sign In'}
+            </button>
+            <Link to="/forgot-password" className="auth-link">
+              Forgot Password?
+            </Link>
+          </div>
+        </form>
+
+        <p className="auth-link-row">
+          Don&apos;t have an account?{' '}
+          <Link to="/signup" className="auth-link">
+            Create one
+          </Link>
         </p>
       </div>
-    </div>
+    </section>
   );
 };
 
