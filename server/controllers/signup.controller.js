@@ -1,5 +1,12 @@
 const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
 const User = require("../models/User");
+
+const generateToken = (id) => {
+  return jwt.sign({ id }, process.env.JWT_SECRET, {
+    expiresIn: "30d"
+  });
+};
 
 exports.signup = async (req, res) => {
   try {
@@ -10,7 +17,9 @@ exports.signup = async (req, res) => {
       return res.status(400).json({ message: "All fields are required" });
     }
 
-    const existingUser = await User.findOne({ email });
+    const normalizedEmail = String(email).trim().toLowerCase();
+
+    const existingUser = await User.findOne({ email: normalizedEmail });
 
     if (existingUser && existingUser.isVerified) {
       return res.status(400).json({ message: "User already exists" });
@@ -21,10 +30,10 @@ exports.signup = async (req, res) => {
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
     const user = await User.findOneAndUpdate(
-      { email },
+      { email: normalizedEmail },
       {
         name,
-        email,
+        email: normalizedEmail,
         password: hashedPassword,
         otp,
         otpExpiry: Date.now() + 10 * 60 * 1000,
@@ -34,7 +43,7 @@ exports.signup = async (req, res) => {
       { new: true, upsert: true }
     );
 
-    console.log("OTP for", email, ":", otp);
+    console.log("OTP for", normalizedEmail, ":", otp);
 
     const userData = {
       _id: user._id,
@@ -62,13 +71,16 @@ exports.verifyOtp = async (req, res) => {
       return res.status(400).json({ message: "Email and OTP are required" });
     }
 
-    const user = await User.findOne({ email });
+    const normalizedEmail = String(email).trim().toLowerCase();
+    const normalizedOtp = String(otp).trim();
+
+    const user = await User.findOne({ email: normalizedEmail });
 
     if (!user) {
       return res.status(400).json({ message: "User not found" });
     }
 
-    if (user.otp !== otp) {
+    if (String(user.otp).trim() !== normalizedOtp) {
       return res.status(400).json({ message: "Invalid OTP" });
     }
 
@@ -83,7 +95,15 @@ exports.verifyOtp = async (req, res) => {
     await user.save();
 
     res.status(200).json({
-      message: "Email verified successfully"
+      message: "Email verified successfully",
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        isVerified: user.isVerified
+      },
+      token: generateToken(user._id)
     });
 
   } catch (error) {
