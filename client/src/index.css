@@ -175,9 +175,7 @@ p { margin-top: 0; margin-bottom: 1rem; color: var(--text-muted); }
   padding: 24px;
   min-width: 0;
 }
-.app-main.with-sidebar {
-  /* no extra styles needed — flex handles it */
-}
+
 .app-content {
   max-width: 1200px;
   margin: 0 auto;

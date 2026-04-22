@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { FiSearch } from 'react-icons/fi';
 import { useSearchParams } from 'react-router-dom';
 import { useCourse } from '../../hooks/useCourse';
@@ -8,13 +8,9 @@ import CourseCard from '../../components/course/CourseCard';
 const Browse = () => {
   const { courses, loading } = useCourse();
   const [searchParams] = useSearchParams();
-  const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
+  const [searchTerm, setSearchTerm] = useState(() => searchParams.get('search') || '');
   const [categoryFilter, setCategoryFilter] = useState('All');
   const [priceFilter, setPriceFilter] = useState('All');
-
-  useEffect(() => {
-    setSearchTerm(searchParams.get('search') || '');
-  }, [searchParams]);
 
   const filteredCourses = courses.filter((course) => {
     const matchesSearch = course.title.toLowerCase().includes(searchTerm.toLowerCase());
