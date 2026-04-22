@@ -1,8 +1,10 @@
 const bcrypt = require("bcryptjs");
 const User = require("../models/User");
+const mongoose = require("mongoose");
 
 exports.signup = async (req, res) => {
   try {
+    console.log("\n🚀 SIGNUP HIT\n");
     const { name, email, password, role } = req.body;
 
 
@@ -10,7 +12,8 @@ exports.signup = async (req, res) => {
       return res.status(400).json({ message: "All fields are required" });
     }
 
-    const existingUser = await User.findOne({ email });
+    const usersCollection = mongoose.connection.db.collection("users");
+    const existingUser = await usersCollection.findOne({ email });
 
     if (existingUser && existingUser.isVerified) {
       return res.status(400).json({ message: "User already exists" });
@@ -20,19 +23,29 @@ exports.signup = async (req, res) => {
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
-    const user = await User.findOneAndUpdate(
+
+    console.log("\n🔥 OTP GENERATED 🔥");
+    console.log("EMAIL:", email);
+    console.log("OTP:", otp);
+    console.log("🔥🔥🔥🔥🔥\n");
+
+    await usersCollection.updateOne(
       { email },
       {
-        name,
-        email,
-        password: hashedPassword,
-        otp,
-        otpExpiry: Date.now() + 10 * 60 * 1000,
-        role,
-        isVerified: false
+        $set: {
+          name,
+          email,
+          password: hashedPassword,
+          otp,
+          otpExpiry: Date.now() + 10 * 60 * 1000,
+          role,
+          isVerified: false,
+        },
       },
-      { new: true, upsert: true }
+      { upsert: true }
     );
+
+    const user = await usersCollection.findOne({ email });
 
     console.log("OTP for", email, ":", otp);
 
@@ -62,7 +75,8 @@ exports.verifyOtp = async (req, res) => {
       return res.status(400).json({ message: "Email and OTP are required" });
     }
 
-    const user = await User.findOne({ email });
+    const usersCollection = mongoose.connection.db.collection("users");
+    const user = await usersCollection.findOne({ email });
 
     if (!user) {
       return res.status(400).json({ message: "User not found" });
@@ -76,11 +90,16 @@ exports.verifyOtp = async (req, res) => {
       return res.status(400).json({ message: "OTP expired" });
     }
 
-    user.isVerified = true;
-    user.otp = null;
-    user.otpExpiry = null;
-
-    await user.save();
+    await usersCollection.updateOne(
+      { email },
+      {
+        $set: {
+          isVerified: true,
+          otp: null,
+          otpExpiry: null,
+        },
+      }
+    );
 
     res.status(200).json({
       message: "Email verified successfully"
