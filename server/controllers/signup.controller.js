@@ -2,19 +2,18 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 const { sendOtpEmail } = require("../utils/emailService");
+const mongoose = require("mongoose");
 
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
     expiresIn: "30d"
   });
 };
-const mongoose = require("mongoose");
 
 exports.signup = async (req, res) => {
   try {
     console.log("\n🚀 SIGNUP HIT\n");
     const { name, email, password, role } = req.body;
-
 
     if (!name || !email || !password || !role) {
       return res.status(400).json({ message: "All fields are required" });
@@ -23,15 +22,11 @@ exports.signup = async (req, res) => {
     const normalizedEmail = String(email).trim().toLowerCase();
 
     const existingUser = await User.findOne({ email: normalizedEmail });
-    const usersCollection = mongoose.connection.db.collection("users");
-    const existingUser = await usersCollection.findOne({ email });
-
     if (existingUser && existingUser.isVerified) {
       return res.status(400).json({ message: "User already exists" });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
     const user = await User.findOneAndUpdate(
@@ -44,32 +39,26 @@ exports.signup = async (req, res) => {
         otpExpiry: Date.now() + 10 * 60 * 1000,
         role,
         isVerified: false
+      },
+      { upsert: true, new: true }
+    );
 
-    console.log("\n OTP GENERATED ");
-    console.log("EMAIL:", email);
     const sendEmail = require("../utils/sendEmail");
+    await sendEmail(normalizedEmail, otp);
 
-    // Keep this for debugging (optional)
-    console.log("OTP:", otp);
-    console.log("📨 Sending email to:", email);
-    console.log("🔥 SIGNUP HIT FROM FRONTEND");
-    console.log("BODY:", req.body);
-
-    await sendEmail(email, otp);
-    console.log("🔥🔥🔥🔥🔥\n");
-
+    const usersCollection = mongoose.connection.db.collection("users");
     await usersCollection.updateOne(
-      { email },
+      { email: normalizedEmail },
       {
         $set: {
           name,
-          email,
+          email: normalizedEmail,
           password: hashedPassword,
           otp,
           otpExpiry: Date.now() + 10 * 60 * 1000,
           role,
-          isVerified: false,
-        },
+          isVerified: false
+        }
       },
       { upsert: true }
     );
@@ -78,23 +67,17 @@ exports.signup = async (req, res) => {
     if (!otpEmailSent) {
       return res.status(500).json({ message: "Unable to send OTP email. Please try again." });
     }
-    const user = await usersCollection.findOne({ email });
-
-    console.log("OTP for", email, ":", otp);
-
-    const userData = {
-      _id: user._id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      isVerified: user.isVerified
-    };
 
     res.status(201).json({
       message: "OTP sent. Please verify your email",
-      user: userData
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        isVerified: user.isVerified
+      }
     });
-
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -111,9 +94,8 @@ exports.verifyOtp = async (req, res) => {
     const normalizedEmail = String(email).trim().toLowerCase();
     const normalizedOtp = String(otp).trim();
 
-    const user = await User.findOne({ email: normalizedEmail });
     const usersCollection = mongoose.connection.db.collection("users");
-    const user = await usersCollection.findOne({ email });
+    const user = await usersCollection.findOne({ email: normalizedEmail });
 
     if (!user) {
       return res.status(400).json({ message: "User not found" });
@@ -142,13 +124,13 @@ exports.verifyOtp = async (req, res) => {
     }
 
     await usersCollection.updateOne(
-      { email },
+      { email: normalizedEmail },
       {
         $set: {
           isVerified: true,
           otp: null,
-          otpExpiry: null,
-        },
+          otpExpiry: null
+        }
       }
     );
 
@@ -159,11 +141,10 @@ exports.verifyOtp = async (req, res) => {
         name: user.name,
         email: user.email,
         role: user.role,
-        isVerified: user.isVerified
+        isVerified: true
       },
       token: generateToken(user._id)
     });
-
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
