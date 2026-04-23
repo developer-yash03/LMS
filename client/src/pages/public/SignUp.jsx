@@ -31,28 +31,15 @@ const SignUp = () => {
     setLoading(true);
 
     try {
-      const res = await fetch("http://localhost:5000/api/signup", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
+      await apiRequest('/signup', 'POST', {
           name: trimmedName,
           email: trimmedEmail,
           password,
           role
-        })
       });
 
-      const data = await res.json();
-
-      console.log("SIGNUP RESPONSE:", data);
-
-      if (!res.ok) {
-        throw new Error(data.message || "Signup failed");
-      }
-
       setLoading(false);
+      showToast('OTP sent to your email. Please verify to continue.', 'success');
 
       navigate('/verify-otp', {
         state: {
@@ -62,8 +49,7 @@ const SignUp = () => {
 
     } catch (err) {
       setLoading(false);
-      console.error("Signup error:", err.message);
-      alert(err.message);
+      showToast(err.message || 'Signup failed', 'error');
     }
   };
 
