@@ -24,7 +24,7 @@ const Sidebar = () => {
     ],
     instructor: [
       { name: 'Dashboard', path: '/instructor/dashboard', icon: FiGrid },
-      { name: 'Create Course', path: '/instructor/create', icon: FiPlusSquare },
+      { name: 'Manage Courses', path: '/instructor/courses', icon: FiPlusSquare },
     ],
     admin: [
       { name: 'Admin Dashboard', path: '/admin/dashboard', icon: FiShield },
