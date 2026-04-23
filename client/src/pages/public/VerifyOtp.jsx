@@ -15,14 +15,12 @@ const VerifyOtp = () => {
   const [loading, setLoading] = useState(false);
   const [counter, setCounter] = useState(RESEND_SECONDS);
 
-  // ⛔ If user directly opens page without email → redirect
   useEffect(() => {
     if (!email) {
       navigate('/signup');
     }
   }, [email, navigate]);
 
-  // ⏳ Resend countdown timer
   useEffect(() => {
     if (counter <= 0) return;
 
