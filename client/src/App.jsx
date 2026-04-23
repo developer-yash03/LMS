@@ -146,6 +146,14 @@ function App() {
                   </RoleGate>
                 }
               />
+              <Route
+                path="/instructor/courses"
+                element={
+                  <RoleGate role="instructor">
+                    <CreateCourse />
+                  </RoleGate>
+                }
+              />
 
               {/* --- ADMIN ROUTES (Role Based) --- */}
               <Route

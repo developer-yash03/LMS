@@ -3,6 +3,8 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import OtpInput from '../../components/auth/OtpInput';
 import { apiRequest } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
+import { useAuth } from '../../hooks/useAuth';
+import { getDashboardRoute } from '../../utils/authValidation';
 import './Auth.css';
 
 const RESEND_SECONDS = 60;
@@ -10,6 +12,8 @@ const RESEND_SECONDS = 60;
 const VerifyOtp = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { showToast } = useToast();
+  const { login } = useAuth();
 
   const email = location.state?.email || '';
 
@@ -42,61 +46,44 @@ const VerifyOtp = () => {
     setLoading(true);
 
     try {
-      const res = await fetch("http://localhost:5000/api/signup/verify-otp", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          email,
-          otp: otpCode
-        })
+      const data = await apiRequest('/signup/verify-otp', 'POST', {
+        email,
+        otp: otpCode
       });
 
-      const data = await res.json();
+      const verifiedUser = data?.user || {};
+      const authUser = {
+        id: verifiedUser._id,
+        name: verifiedUser.name,
+        email: verifiedUser.email,
+        role: String(verifiedUser.role || 'student').toLowerCase(),
+        token: data?.token
+      };
 
-      if (!res.ok) {
-        throw new Error(data.message || "Verification failed");
-      }
+      login(authUser);
 
       setLoading(false);
-
-      alert("OTP Verified ✅");
-
-      navigate("/login");
+      showToast('OTP verified successfully. Welcome!', 'success');
+      navigate(getDashboardRoute(authUser.role));
 
     } catch (err) {
       setLoading(false);
-      alert(err.message);
+      showToast(err.message || 'Verification failed', 'error');
     }
   };
 
-  // 🔁 RESEND OTP (frontend only for now)
   const handleResend = async () => {
     if (counter > 0) return;
 
     try {
-      await fetch("http://localhost:5000/api/signup", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          email,
-          name: "Temp",
-          password: "123456",
-          role: "student"
-        })
-      });
-
-      alert("New OTP sent 📩");
+      await apiRequest('/signup/resend-otp', 'POST', { email });
+      showToast('A new OTP has been sent to your email.', 'info');
 
       setCounter(RESEND_SECONDS);
       setOtpCode('');
 
-    // eslint-disable-next-line no-unused-vars
-    } catch (err) {
-      alert("Failed to resend OTP");
+    } catch {
+      showToast('Failed to resend OTP. Please try again.', 'error');
     }
   };
 
@@ -117,7 +104,7 @@ const VerifyOtp = () => {
             type="email"
             className="form-input"
             value={email}
-            onChange={(event) => setEmail(event.target.value)}
+            readOnly
             placeholder="name@example.com"
           />
         </div>

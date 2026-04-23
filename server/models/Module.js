@@ -1,7 +1,17 @@
 const mongoose = require("mongoose");
 
 const moduleSchema = new mongoose.Schema({
-  title: String,
+  title: {
+    type: String,
+    required: true
+  },
+
+  description: String,
+
+  order: {
+    type: Number,
+    default: 0
+  },
 
   course: {
     type: mongoose.Schema.Types.ObjectId,
