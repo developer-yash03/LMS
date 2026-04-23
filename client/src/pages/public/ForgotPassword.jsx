@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import OtpInput from '../../components/auth/OtpInput';
 import { isValidEmail } from '../../utils/authValidation';
+import { apiRequest } from '../../services/api';
+import { useToast } from '../../context/ToastContext';
 import './Auth.css';
 
 const RESEND_SECONDS = 60;
@@ -20,6 +22,7 @@ const getPasswordStrength = (value) => {
 };
 
 const ForgotPassword = () => {
+  const { showToast } = useToast();
   const [step, setStep] = useState(1);
   const [email, setEmail] = useState('');
   const [emailTouched, setEmailTouched] = useState(false);
@@ -50,33 +53,41 @@ const ForgotPassword = () => {
     return () => clearInterval(timerId);
   }, [step, counter]);
 
-  const handleSendCode = (event) => {
+  const handleSendCode = async (event) => {
     event.preventDefault();
     if (!emailValid) {
       return;
     }
     setLoading(true);
 
-    // Mock forgot-password request; replace with real backend later.
-    setTimeout(() => {
+    try {
+      await apiRequest('/auth/send-otp', 'POST', { email: trimmedEmail });
       setLoading(false);
       setStep(2);
       setCounter(RESEND_SECONDS);
-    }, 1100);
+      showToast('OTP sent to your email address.', 'success');
+    } catch (error) {
+      setLoading(false);
+      showToast(error.message || 'Failed to send OTP', 'error');
+    }
   };
 
-  const handleVerifyOtp = (event) => {
+  const handleVerifyOtp = async (event) => {
     event.preventDefault();
     if (otpCode.length !== 6) {
       return;
     }
     setLoading(true);
 
-    // Mock OTP verification; replace with real backend later.
-    setTimeout(() => {
+    try {
+      await apiRequest('/auth/verify-otp', 'POST', { email: trimmedEmail, otp: otpCode });
       setLoading(false);
       setStep(3);
-    }, 1000);
+      showToast('OTP verified. Set your new password.', 'success');
+    } catch (error) {
+      setLoading(false);
+      showToast(error.message || 'OTP verification failed', 'error');
+    }
   };
 
   const handleResetPassword = (event) => {
@@ -148,10 +159,18 @@ const ForgotPassword = () => {
                 type="button"
                 className="btn btn-outline btn-full"
                 disabled={counter > 0}
-                onClick={() => {
-                  // Mock resend OTP call; replace with real backend later.
-                  setCounter(RESEND_SECONDS);
-                  setOtpCode('');
+                onClick={async () => {
+                  try {
+                    setLoading(true);
+                    await apiRequest('/auth/send-otp', 'POST', { email: trimmedEmail });
+                    setCounter(RESEND_SECONDS);
+                    setOtpCode('');
+                    showToast('OTP resent successfully.', 'info');
+                  } catch (error) {
+                    showToast(error.message || 'Failed to resend OTP', 'error');
+                  } finally {
+                    setLoading(false);
+                  }
                 }}
               >
                 {counter > 0 ? `Resend OTP in ${counter}s` : 'Resend OTP'}
