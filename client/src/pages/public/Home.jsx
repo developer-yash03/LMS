@@ -20,49 +20,45 @@ const Home = () => {
   const handleSearchSubmit = (event) => {
     event.preventDefault();
     const query = searchValue.trim();
-
     if (!query) {
       navigate('/browse');
       return;
     }
-
     navigate(`/browse?search=${encodeURIComponent(query)}`);
   };
 
   return (
     <div className="home-page">
       <section className="hero-section">
-        <p className="hero-badge">LMS Pro</p>
-        <h1 className="hero-title">Learn and Teach Locally with LMS Pro</h1>
-        <p className="hero-subtitle">
-          Build job-ready skills with expert-led classes and community-driven learning designed for students and
-          instructors.
-        </p>
-        <div className="hero-actions">
-          <Link to="/signup" className="btn btn-primary hero-btn">
-            Start Learning
-          </Link>
-          <Link to="/signup" className="btn btn-outline hero-btn">
-            Become an Instructor
-          </Link>
-        </div>
+        <div className="hero-content">
+          <p className="hero-badge">Welcome to ScholarHub</p>
+          <h1 className="hero-title">Elevate Your Academic Journey.</h1>
+          <p className="hero-subtitle">
+            Join a community of dedicated learners and world-class instructors in a space designed for focus and growth.
+          </p>
+          <div className="hero-actions">
+            <Link to="/signup" className="btn-hero-primary">
+              Start Learning
+            </Link>
+            <Link to="/signup" className="btn-hero-secondary">
+              Become an Instructor
+            </Link>
+          </div>
 
-        <form className="hero-search-bar" onSubmit={handleSearchSubmit}>
-          <label htmlFor="home-course-search" className="search-icon" aria-hidden="true">
-            🔎
-          </label>
-          <input
-            id="home-course-search"
-            type="text"
-            className="search-input"
-            placeholder="What do you want to learn today?"
-            value={searchValue}
-            onChange={(event) => setSearchValue(event.target.value)}
-          />
-          <button type="submit" className="btn btn-primary search-button">
-            Search
-          </button>
-        </form>
+          <form className="hero-search-bar" onSubmit={handleSearchSubmit}>
+            <span className="search-icon">🔎</span>
+            <input
+              type="text"
+              className="search-input"
+              placeholder="What do you want to learn today?"
+              value={searchValue}
+              onChange={(event) => setSearchValue(event.target.value)}
+            />
+            <button type="submit" className="search-button">
+              Search
+            </button>
+          </form>
+        </div>
       </section>
 
       <section className="content-section">
@@ -70,9 +66,7 @@ const Home = () => {
         <div className="category-grid">
           {subjects.map((subject) => (
             <article key={subject.name} className="category-card">
-              <div className="category-icon" aria-hidden="true">
-                {subject.icon}
-              </div>
+              <div className="category-icon">{subject.icon}</div>
               <h3 className="category-title">{subject.name}</h3>
             </article>
           ))}
@@ -101,16 +95,16 @@ const Home = () => {
       </section>
 
       <section className="bottom-cta-section">
-        <h2 className="bottom-cta-title">Ready to start your journey?</h2>
-        <p className="bottom-cta-subtitle">
-          Join LMS Pro today and learn from trusted local educators with practical, guided lessons.
-        </p>
-        <Link to="/signup" className="btn btn-primary bottom-cta-button">
-          Join for Free
-        </Link>
+        <div className="bottom-cta-content">
+          <h2 className="bottom-cta-title">Ready to start your journey?</h2>
+          <p className="bottom-cta-subtitle">
+            Join ScholarHub today and learn from trusted local educators with practical, guided lessons.
+          </p>
+          <Link to="/signup" className="btn-hero-primary">
+            Join for Free
+          </Link>
+        </div>
       </section>
-
-      <footer className="home-footer">© 2026 LMS Pro. Built for community-driven learning.</footer>
     </div>
   );
 };

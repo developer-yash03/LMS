@@ -66,16 +66,15 @@ function App() {
 
   const dashboardPrefixes = ['/my-learning', '/player/', '/history', '/instructor', '/admin'];
   const showSidebar = dashboardPrefixes.some((prefix) => pathname.startsWith(prefix));
-  const authPaths = ['/login', '/signup', '/verify-otp', '/forgot-password', '/reset'];
-  const hideNavbar = authPaths.includes(pathname);
+  const authPaths = ['/verify-otp', '/forgot-password', '/reset'];
 
   return (
     <div className="app-shell">
       <ScrollToTop scrollRef={mainScrollRef} />
 
-      {!hideNavbar && <Navbar />}
+      <Navbar />
 
-      <div className={`app-body ${hideNavbar ? 'no-navbar' : ''}`}>
+      <div className="app-body">
         {/* ── Fixed Sidebar ── */}
         {showSidebar && (
           <aside className="app-sidebar">
@@ -88,7 +87,7 @@ function App() {
           ref={mainScrollRef}
           className={`app-main ${showSidebar ? 'with-sidebar' : ''}`}
         >
-          <div className="app-content">
+          <div className={(pathname === '/login' || pathname === '/signup' || pathname === '/forgot-password') ? "auth-full-width" : "app-content"}>
             <Routes>
               {/* --- PUBLIC ROUTES --- */}
               <Route
@@ -177,7 +176,7 @@ function App() {
               <Route path="*" element={<NotFound />} />
             </Routes>
           </div>
-          {!hideNavbar && pathname !== '/' && <Footer />}
+          <Footer />
         </main>
       </div>
     </div>
