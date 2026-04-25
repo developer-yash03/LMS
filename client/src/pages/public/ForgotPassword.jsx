@@ -4,9 +4,10 @@ import OtpInput from '../../components/auth/OtpInput';
 import { isValidEmail } from '../../utils/authValidation';
 import { apiRequest } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
+import { FiMail, FiLock, FiShield, FiArrowLeft, FiCheckCircle } from 'react-icons/fi';
 import './Auth.css';
 
-const RESEND_SECONDS = 60;
+const RESEND_SECONDS = 120;
 
 const getPasswordStrength = (value) => {
   let score = 0;
@@ -42,24 +43,17 @@ const ForgotPassword = () => {
   const canReset = passwordsMatch && newPassword.length >= 8;
 
   useEffect(() => {
-    if (step !== 2 || counter <= 0) {
-      return undefined;
-    }
-
+    if (step !== 2 || counter <= 0) return;
     const timerId = setInterval(() => {
       setCounter((prev) => Math.max(prev - 1, 0));
     }, 1000);
-
     return () => clearInterval(timerId);
   }, [step, counter]);
 
   const handleSendCode = async (event) => {
     event.preventDefault();
-    if (!emailValid) {
-      return;
-    }
+    if (!emailValid) return;
     setLoading(true);
-
     try {
       await apiRequest('/auth/send-otp', 'POST', { email: trimmedEmail });
       setLoading(false);
@@ -74,11 +68,8 @@ const ForgotPassword = () => {
 
   const handleVerifyOtp = async (event) => {
     event.preventDefault();
-    if (otpCode.length !== 6) {
-      return;
-    }
+    if (otpCode.length !== 6) return;
     setLoading(true);
-
     try {
       await apiRequest('/auth/verify-otp', 'POST', { email: trimmedEmail, otp: otpCode });
       setLoading(false);
@@ -92,12 +83,8 @@ const ForgotPassword = () => {
 
   const handleResetPassword = (event) => {
     event.preventDefault();
-    if (!canReset) {
-      return;
-    }
+    if (!canReset) return;
     setLoading(true);
-
-    // Mock password reset request; replace with real backend later.
     setTimeout(() => {
       setLoading(false);
       setSuccessMessage('Password reset successful. You can now sign in.');
@@ -105,145 +92,153 @@ const ForgotPassword = () => {
   };
 
   return (
-    <section className="auth-page">
-      <div className="auth-container">
-        {step === 1 && (
-          <>
-            <div className="auth-heading">
-              <h1>Forgot Password</h1>
-              <p>Enter your registered email to receive an OTP.</p>
-            </div>
+    <div className="auth-split-page">
+      <div className="auth-main-container">
+        {/* Left side - Visual Content */}
+        <div className="auth-visual-side">
+          <div className="auth-visual-overlay"></div>
+          <div className="auth-visual-text">
+            <h2>Elevate Your Academic Journey.</h2>
+            <p>Join a community of dedicated learners and world-class instructors in a space designed for focus and growth.</p>
+          </div>
+        </div>
 
-            <form className="auth-form" onSubmit={handleSendCode} noValidate>
-              <div className="form-group">
-                <label htmlFor="forgot-email" className="form-label">
-                  Email
-                </label>
-                <input
-                  id="forgot-email"
-                  type="email"
-                  className="form-input"
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
-                  onBlur={() => setEmailTouched(true)}
-                  placeholder="name@example.com"
-                  required
-                />
-                {showEmailError && <p className="text-error">Please enter a valid email address.</p>}
-              </div>
-
-              <button type="submit" className="btn btn-primary btn-full" disabled={!emailValid || loading}>
-                {loading ? 'Sending...' : 'Send OTP'}
-              </button>
-            </form>
-          </>
-        )}
-
-        {step === 2 && (
-          <>
-            <div className="auth-heading">
-              <h1>Enter OTP</h1>
-              <p>We sent a code to {trimmedEmail}.</p>
-            </div>
-
-            <form className="auth-form" onSubmit={handleVerifyOtp}>
-              <div className="otp-wrapper">
-                <OtpInput length={6} value={otpCode} onChange={setOtpCode} />
-              </div>
-
-              <button type="submit" className="btn btn-primary btn-full" disabled={otpCode.length !== 6 || loading}>
-                {loading ? 'Verifying...' : 'Verify Code'}
-              </button>
-
-              <button
-                type="button"
-                className="btn btn-outline btn-full"
-                disabled={counter > 0}
-                onClick={async () => {
-                  try {
-                    setLoading(true);
-                    await apiRequest('/auth/send-otp', 'POST', { email: trimmedEmail });
-                    setCounter(RESEND_SECONDS);
-                    setOtpCode('');
-                    showToast('OTP resent successfully.', 'info');
-                  } catch (error) {
-                    showToast(error.message || 'Failed to resend OTP', 'error');
-                  } finally {
-                    setLoading(false);
-                  }
-                }}
-              >
-                {counter > 0 ? `Resend OTP in ${counter}s` : 'Resend OTP'}
-              </button>
-            </form>
-          </>
-        )}
-
-        {step === 3 && (
-          <>
-            <div className="auth-heading">
-              <h1>Reset Password</h1>
-              <p>Create a new secure password for your account.</p>
-            </div>
-
-            <form className="auth-form" onSubmit={handleResetPassword}>
-              <div className="form-group">
-                <label htmlFor="new-password" className="form-label">
-                  New Password
-                </label>
-                <input
-                  id="new-password"
-                  type="password"
-                  className="form-input"
-                  value={newPassword}
-                  onChange={(event) => setNewPassword(event.target.value)}
-                  placeholder="Enter new password"
-                  required
-                />
-                <div className="password-strength">
-                  <div
-                    className="password-strength-fill"
-                    style={{ width: strength.width, backgroundColor: strength.color }}
-                  />
+        {/* Right side - Form Content */}
+        <div className="auth-form-side">
+          <div className="auth-form-container">
+            {step === 1 && (
+              <>
+                <div className="auth-header">
+                  <h1>Forgot Password</h1>
+                  <p>Enter your registered email to receive an OTP code.</p>
                 </div>
-                <p className="password-strength-label">Strength: {strength.label}</p>
-              </div>
+                <form className="auth-modern-form" onSubmit={handleSendCode} noValidate>
+                  <div className="modern-field">
+                    <label>Email Address</label>
+                    <div className="input-wrapper">
+                      <FiMail className="input-icon" />
+                      <input
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        onBlur={() => setEmailTouched(true)}
+                        placeholder="name@university.edu"
+                      />
+                    </div>
+                    {showEmailError && <span className="error-hint">Please enter a valid email address.</span>}
+                  </div>
+                  <button type="submit" className="btn-auth-primary" disabled={!emailValid || loading}>
+                    {loading ? 'Sending...' : 'Send OTP'}
+                  </button>
+                </form>
+              </>
+            )}
 
-              <div className="form-group">
-                <label htmlFor="confirm-password" className="form-label">
-                  Confirm New Password
-                </label>
-                <input
-                  id="confirm-password"
-                  type="password"
-                  className="form-input"
-                  value={confirmPassword}
-                  onChange={(event) => setConfirmPassword(event.target.value)}
-                  placeholder="Re-enter new password"
-                  required
-                />
-                {confirmPassword.length > 0 && !passwordsMatch && (
-                  <p className="text-error">Passwords do not match.</p>
+            {step === 2 && (
+              <>
+                <div className="auth-header">
+                  <h1>Verify Code</h1>
+                  <p>We sent a 6-digit code to <strong>{trimmedEmail}</strong>.</p>
+                </div>
+                <form className="auth-modern-form" onSubmit={handleVerifyOtp}>
+                  <div className="modern-field">
+                    <label>Enter OTP</label>
+                    <div className="otp-wrapper">
+                      <OtpInput length={6} value={otpCode} onChange={setOtpCode} />
+                    </div>
+                  </div>
+                  <button type="submit" className="btn-auth-primary" disabled={otpCode.length !== 6 || loading}>
+                    {loading ? 'Verifying...' : 'Verify Code'}
+                  </button>
+                  <button
+                    type="button"
+                    className="resend-btn"
+                    disabled={counter > 0 || loading}
+                    onClick={async () => {
+                      try {
+                        setLoading(true);
+                        await apiRequest('/auth/send-otp', 'POST', { email: trimmedEmail });
+                        setCounter(RESEND_SECONDS);
+                        setOtpCode('');
+                        showToast('OTP resent successfully.', 'info');
+                      } catch (error) {
+                        showToast(error.message || 'Failed to resend OTP', 'error');
+                      } finally {
+                        setLoading(false);
+                      }
+                    }}
+                  >
+                    {counter > 0 ? `Resend code in ${counter}s` : 'Resend Code'}
+                  </button>
+                </form>
+              </>
+            )}
+
+            {step === 3 && (
+              <>
+                {!successMessage ? (
+                  <>
+                    <div className="auth-header">
+                      <h1>Reset Password</h1>
+                      <p>Create a new secure password for your account.</p>
+                    </div>
+                    <form className="auth-modern-form" onSubmit={handleResetPassword}>
+                      <div className="modern-field">
+                        <label>New Password</label>
+                        <div className="input-wrapper">
+                          <FiLock className="input-icon" />
+                          <input
+                            type="password"
+                            value={newPassword}
+                            onChange={(e) => setNewPassword(e.target.value)}
+                            placeholder="Min. 8 characters"
+                          />
+                        </div>
+                        <div className="strength-bar-container">
+                          <div className="strength-bar" style={{ width: strength.width, backgroundColor: strength.color }}></div>
+                        </div>
+                        <span className="strength-text">Strength: {strength.label}</span>
+                      </div>
+                      <div className="modern-field">
+                        <label>Confirm Password</label>
+                        <div className="input-wrapper">
+                          <FiShield className="input-icon" />
+                          <input
+                            type="password"
+                            value={confirmPassword}
+                            onChange={(e) => setConfirmPassword(e.target.value)}
+                            placeholder="Re-enter password"
+                          />
+                        </div>
+                        {confirmPassword.length > 0 && !passwordsMatch && (
+                          <span className="error-hint">Passwords do not match.</span>
+                        )}
+                      </div>
+                      <button type="submit" className="btn-auth-primary" disabled={!canReset || loading}>
+                        {loading ? 'Resetting...' : 'Reset Password'}
+                      </button>
+                    </form>
+                  </>
+                ) : (
+                  <div className="auth-success-screen">
+                    <FiCheckCircle size={60} color="#16a34a" />
+                    <h1>Success!</h1>
+                    <p>{successMessage}</p>
+                    <Link to="/login" className="btn-auth-primary">Sign In</Link>
+                  </div>
                 )}
-              </div>
+              </>
+            )}
 
-              <button type="submit" className="btn btn-primary btn-full" disabled={!canReset || loading}>
-                {loading ? 'Resetting...' : 'Reset Password'}
-              </button>
-
-              {successMessage && <p className="text-success">{successMessage}</p>}
-            </form>
-          </>
-        )}
-
-        <p className="auth-link-row">
-          Back to{' '}
-          <Link to="/login" className="auth-link">
-            Sign In
-          </Link>
-        </p>
+            <p className="auth-footer-text">
+              <Link to="/login" className="back-to-login">
+                <FiArrowLeft size={14} /> Back to Sign In
+              </Link>
+            </p>
+          </div>
+        </div>
       </div>
-    </section>
+    </div>
   );
 };
 

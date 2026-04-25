@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuthActions } from '../../hooks/useAuth';
 import { isValidEmail } from '../../utils/authValidation';
+import { FiEye, FiEyeOff, FiMail, FiLock } from 'react-icons/fi';
+import { FcGoogle } from 'react-icons/fc';
+import { SiApple } from 'react-icons/si'; // Adding some variety for social icons
 import './Auth.css';
 
 const Login = () => {
@@ -9,8 +12,10 @@ const Login = () => {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [emailTouched, setEmailTouched] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
 
   const trimmedEmail = email.trim();
   const emailValid = isValidEmail(trimmedEmail);
@@ -19,85 +24,91 @@ const Login = () => {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    if (!formValid) {
-      return;
-    }
+    if (!formValid) return;
 
     setLoading(true);
-
     try {
-      await handleLogin({
-        email: trimmedEmail,
-        password,
-      });
+      await handleLogin({ email: trimmedEmail, password });
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <section className="auth-page">
-      <Link to="/" className="auth-brand-logo">
-        LMS <span>Pro</span>
-      </Link>
-
-      <div className="auth-container">
-        <div className="auth-heading">
-          <h1>Sign In</h1>
-          <p>Welcome Back to LMS Pro.</p>
+    <div className="auth-split-page">
+      <div className="auth-main-container">
+        {/* Left side - Visual Content */}
+        <div className="auth-visual-side">
+          <div className="auth-visual-overlay"></div>
+          <div className="auth-visual-text">
+            <h2>Elevate Your Academic Journey.</h2>
+            <p>Join a community of dedicated learners and world-class instructors in a space designed for focus and growth.</p>
+          </div>
         </div>
 
-        <form className="auth-form" onSubmit={handleSubmit} noValidate>
-          <div className="form-group">
-            <label htmlFor="login-email" className="form-label">
-              Email
-            </label>
-            <input
-              id="login-email"
-              type="email"
-              className="form-input"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              onBlur={() => setEmailTouched(true)}
-              placeholder="name@example.com"
-              required
-            />
-            {showEmailError && <p className="text-error">Please enter a valid email address.</p>}
-          </div>
+        {/* Right side - Login Form */}
+        <div className="auth-form-side">
+          <div className="auth-form-container">
+            <div className="auth-header">
+              <h1>Welcome Back</h1>
+              <p>Please enter your details to access your portal.</p>
+            </div>
 
-          <div className="form-group">
-            <label htmlFor="login-password" className="form-label">
-              Password
-            </label>
-            <input
-              id="login-password"
-              type="password"
-              className="form-input"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              placeholder="Enter your password"
-              required
-            />
-          </div>
+            <form className="auth-modern-form" onSubmit={handleSubmit} noValidate>
+              <div className="modern-field">
+                <label>Email Address</label>
+                <div className="input-wrapper">
+                  <FiMail className="input-icon" />
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    onBlur={() => setEmailTouched(true)}
+                    placeholder="name@university.edu"
+                  />
+                </div>
+                {showEmailError && <span className="error-hint">Please enter a valid email address.</span>}
+              </div>
 
-          <div className="auth-actions">
-            <button type="submit" className="btn btn-primary btn-full" disabled={!formValid || loading}>
-              {loading ? 'Signing in...' : 'Sign In'}
-            </button>
-            <Link to="/forgot-password" className="auth-link">
-              Forgot Password?
-            </Link>
-          </div>
-        </form>
+              <div className="modern-field">
+                <div className="label-row">
+                  <label>Password</label>
+                  <Link to="/forgot-password">Forgot password?</Link>
+                </div>
+                <div className="input-wrapper">
+                  <FiLock className="input-icon" />
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                  />
+                  <button 
+                    type="button" 
+                    className="eye-toggle"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? <FiEyeOff /> : <FiEye />}
+                  </button>
+                </div>
+              </div>
 
-        <p className="auth-link-row">
-          Don&apos;t have an account?{' '}
-          <Link to="/signup" className="auth-link">
-            Create one
-          </Link>
-        </p>
+              <button 
+                type="submit" 
+                className="btn-auth-primary" 
+                disabled={!formValid || loading}
+              >
+                {loading ? 'Processing...' : 'Sign In to ScholarHub'}
+              </button>
+
+              <p className="auth-footer-text">
+                Don’t have an account? <Link to="/signup">Register now</Link>
+              </p>
+            </form>
+          </div>
+        </div>
       </div>
-    </section>
+    </div>
   );
 };
 
