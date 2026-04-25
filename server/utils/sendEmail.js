@@ -1,47 +1,23 @@
 const nodemailer = require("nodemailer");
 
-let transporter;
-
-const getTransporter = () => {
-  if (transporter) {
-    return transporter;
-  }
-
-  const emailUser = process.env.EMAIL_USER;
-  const emailPassword = String(process.env.EMAIL_PASSWORD || "").replace(/\s+/g, "");
-
-  if (!emailUser || !emailPassword) {
-    return null;
-  }
-
-  transporter = nodemailer.createTransport({
-    service: process.env.EMAIL_SERVICE || "gmail",
-    auth: {
-      user: emailUser,
-      pass: emailPassword
-    }
-  });
-
-  return transporter;
-};
-
-const sendOtpEmail = async (email, otp, name = "Learner") => {
+const sendEmail = async (to, otp, name = "Learner") => {
   try {
-    const mailer = getTransporter();
+    const transporter = nodemailer.createTransport({
+      service: process.env.EMAIL_SERVICE || "gmail",
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASSWORD || process.env.EMAIL_PASS
+      }
+    });
 
-    if (!mailer) {
-      console.error("Email service is not configured. Set EMAIL_USER and EMAIL_PASSWORD in .env");
-      return false;
-    }
-
-    await mailer.sendMail({
+    const info = await transporter.sendMail({
       from: `"ScholarHub" <${process.env.EMAIL_USER}>`,
-      to: email,
+      to,
       subject: "Your ScholarHub OTP Code",
       html: `
         <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;border:1px solid #e5e7eb;border-radius:8px;">
           <div style="text-align:center; margin-bottom: 24px; padding: 20px; background-color: #fdf5e6; border-radius: 6px;">
-            <h1 style="font-family: 'Georgia', serif; color: #5d4037; margin: 0; font-size: 30px; letter-spacing: 1px;">ScholarHub</h1>
+            <h1 style="font-family: 'Georgia', serif; color: #5d4037; margin: 0; font-size: 36px; letter-spacing: 1px;">ScholarHub</h1>
           </div>
           
           <div style="text-align: center;">
@@ -60,13 +36,10 @@ const sendOtpEmail = async (email, otp, name = "Learner") => {
       `
     });
 
-    return true;
+    console.log("📧 Email sent:", info.response);
   } catch (error) {
-    console.error("Failed to send OTP email:", error.message);
-    return false;
+    console.log("❌ Email error:", error.message);
   }
 };
 
-module.exports = {
-  sendOtpEmail
-};
+module.exports = sendEmail;

@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const { login, getMe } = require("../controllers/authController");
+const { login, getMe, sendOtp, verifyOtp } = require("../controllers/authController");
 const { verifyToken, authorizeRoles } = require("../middlewares/auth");
 
 router.post("/login", login);
@@ -22,5 +22,8 @@ router.post("/courses", verifyToken, authorizeRoles("instructor", "admin"), (req
 router.get("/analytics", verifyToken, authorizeRoles("admin"), (req, res) => {
   res.status(200).json({ success: true, message: "Analytics data accessed successfully" });
 });
+
+router.post("/send-otp", sendOtp);
+router.post("/verify-otp", verifyOtp);
 
 module.exports = router;

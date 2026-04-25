@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { Link, Route, Routes, useLocation } from 'react-router-dom';
+import { Link, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import './App.css';
 
 // Layout Components
@@ -12,6 +12,9 @@ import Home from './pages/public/Home.jsx';
 import Browse from './pages/public/Browse.jsx';
 import Details from './pages/public/Details.jsx';
 import Login from './pages/public/Login.jsx';
+import SignUp from './pages/public/SignUp.jsx';
+import VerifyOtp from './pages/public/VerifyOtp.jsx';
+import ForgotPassword from './pages/public/ForgotPassword.jsx';
 
 // Student Pages
 import History from './pages/student/History.jsx';
@@ -29,6 +32,8 @@ import AdminUsers from './pages/admin/Users.jsx';
 // Auth Wrappers (Security)
 import Protected from './components/auth/Protected.jsx';
 import RoleGate from './components/auth/RoleGate.jsx';
+import { useAuth } from './hooks/useAuth.js';
+import { getDashboardRoute } from './utils/authValidation.js';
 
 function ScrollToTop({ scrollRef }) {
   const { pathname } = useLocation();
@@ -56,16 +61,17 @@ function NotFound() {
 
 function App() {
   const { pathname } = useLocation();
+  const { user } = useAuth();
   const mainScrollRef = useRef(null);
 
   const dashboardPrefixes = ['/my-learning', '/player/', '/history', '/instructor', '/admin'];
   const showSidebar = dashboardPrefixes.some((prefix) => pathname.startsWith(prefix));
+  const authPaths = ['/verify-otp', '/forgot-password', '/reset'];
 
   return (
     <div className="app-shell">
       <ScrollToTop scrollRef={mainScrollRef} />
 
-      {/* ── Fixed Navbar ── */}
       <Navbar />
 
       <div className="app-body">
@@ -81,13 +87,20 @@ function App() {
           ref={mainScrollRef}
           className={`app-main ${showSidebar ? 'with-sidebar' : ''}`}
         >
-          <div className="app-content">
+          <div className={(pathname === '/login' || pathname === '/signup' || pathname === '/forgot-password') ? "auth-full-width" : "app-content"}>
             <Routes>
               {/* --- PUBLIC ROUTES --- */}
-              <Route path="/" element={<Home />} />
+              <Route
+                path="/"
+                element={user ? <Navigate to={getDashboardRoute(user.role)} replace /> : <Home />}
+              />
               <Route path="/browse" element={<Browse />} />
               <Route path="/course/:id" element={<Details />} />
               <Route path="/login" element={<Login />} />
+              <Route path="/signup" element={<SignUp />} />
+              <Route path="/verify-otp" element={<VerifyOtp />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset" element={<ForgotPassword />} />
 
               {/* --- STUDENT ROUTES (Protected) --- */}
               <Route
@@ -126,6 +139,14 @@ function App() {
               />
               <Route
                 path="/instructor/create"
+                element={
+                  <RoleGate role="instructor">
+                    <CreateCourse />
+                  </RoleGate>
+                }
+              />
+              <Route
+                path="/instructor/courses"
                 element={
                   <RoleGate role="instructor">
                     <CreateCourse />
