@@ -51,7 +51,7 @@ const sendOtpEmail = async (email, otp, name = "Learner") => {
             <div style="font-size:32px;font-weight:700;letter-spacing:8px;background:#f8fafc;padding:16px 24px;display:inline-block;border-radius:8px;color:#0f172a;border:1px solid #e2e8f0;margin: 10px 0;">
               ${otp}
             </div>
-            <p style="margin-top:20px; font-weight: 500;">This OTP expires in 10 minutes.</p>
+            <p style="margin-top:20px; font-weight: 500;">This OTP expires in 5 minutes.</p>
             <p style="color:#64748b; font-size: 14px; margin-top: 24px; border-top: 1px solid #f1f5f9; padding-top: 20px;">
               If you did not request this, you can safely ignore this email.
             </p>

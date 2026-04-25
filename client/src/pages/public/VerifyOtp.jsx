@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { FiArrowLeft, FiShield, FiMail } from 'react-icons/fi';
 import OtpInput from '../../components/auth/OtpInput';
 import { apiRequest } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
@@ -29,22 +30,17 @@ const VerifyOtp = () => {
 
   useEffect(() => {
     if (counter <= 0) return;
-
     const timerId = setInterval(() => {
       setCounter((prev) => Math.max(prev - 1, 0));
     }, 1000);
-
     return () => clearInterval(timerId);
   }, [counter]);
 
   const handleVerify = async (event) => {
     event.preventDefault();
-    if (otpCode.length !== 6 || !email) {
-      return;
-    }
+    if (otpCode.length !== 6 || !email) return;
 
     setLoading(true);
-
     try {
       const data = await apiRequest('/signup/verify-otp', 'POST', {
         email,
@@ -61,11 +57,9 @@ const VerifyOtp = () => {
       };
 
       login(authUser);
-
       setLoading(false);
-      showToast('OTP verified successfully. Welcome!', 'success');
+      showToast('Account verified! Welcome to ScholarHub.', 'success');
       navigate(getDashboardRoute(authUser.role));
-
     } catch (err) {
       setLoading(false);
       showToast(err.message || 'Verification failed', 'error');
@@ -74,68 +68,69 @@ const VerifyOtp = () => {
 
   const handleResend = async () => {
     if (counter > 0) return;
-
     try {
       await apiRequest('/signup/resend-otp', 'POST', { email });
       showToast('A new OTP has been sent to your email.', 'info');
-
       setCounter(RESEND_SECONDS);
       setOtpCode('');
-
     } catch {
-      showToast('Failed to resend OTP. Please try again.', 'error');
+      showToast('Failed to resend OTP.', 'error');
     }
   };
 
   return (
-    <section className="auth-page">
-      <div className="auth-container">
-        <div className="auth-heading">
-          <h1>Verify OTP</h1>
-          <p>Enter the 6-digit code sent to {email || 'your email'}.</p>
-        </div>
-
-        <div className="form-group" style={{ marginBottom: '0.75rem' }}>
-          <label htmlFor="verify-email" className="form-label">
-            Email
-          </label>
-          <input
-            id="verify-email"
-            type="email"
-            className="form-input"
-            value={email}
-            readOnly
-            placeholder="name@example.com"
-          />
-        </div>
-
-        <form className="auth-form" onSubmit={handleVerify}>
-          <div className="otp-wrapper">
-            <OtpInput length={6} value={otpCode} onChange={setOtpCode} />
-            <p className="otp-meta">Code expires in 5 minutes.</p>
+    <section className="auth-split-page">
+      <div className="auth-main-container">
+        {/* Left Visual Side */}
+        <div className="auth-visual-side">
+          <div className="auth-visual-overlay"></div>
+          <div className="auth-visual-text">
+            <h2>Verify Your Identity.</h2>
+            <p>One step closer to your academic journey. Please enter the secure code sent to your email.</p>
           </div>
+        </div>
 
-          <button
-            type="submit"
-            className="btn btn-primary btn-full"
-            disabled={otpCode.length !== 6 || loading}
-          >
-            {loading ? 'Verifying...' : 'Verify OTP'}
-          </button>
+        {/* Right Form Side */}
+        <div className="auth-form-side">
+          <div className="auth-form-container">
+            <div className="auth-header">
+              <h1>Verify OTP</h1>
+              <p>We've sent a 6-digit verification code to <br /><strong>{email}</strong></p>
+            </div>
 
-          <button
-            type="button"
-            className="btn btn-outline btn-full"
-            onClick={handleResend}
-            disabled={counter > 0}
-          >
-            {counter > 0 ? `Resend OTP in ${counter}s` : 'Resend OTP'}
-          </button>
-        </form>
+            <form className="auth-modern-form" onSubmit={handleVerify}>
+              <div className="modern-field">
+                <div className="otp-wrapper">
+                  <OtpInput length={6} value={otpCode} onChange={setOtpCode} />
+                  <p className="otp-meta">Code expires in 5 minutes.</p>
+                </div>
+              </div>
 
-        <p className="auth-link-row">
-          Wrong email? <Link to="/signup">Go back</Link>
-        </p>
+              <button 
+                type="submit" 
+                className="btn-auth-primary" 
+                disabled={otpCode.length !== 6 || loading}
+              >
+                {loading ? 'Verifying...' : 'Complete Verification'}
+              </button>
+
+              <button
+                type="button"
+                className="resend-btn"
+                onClick={handleResend}
+                disabled={counter > 0}
+              >
+                {counter > 0 ? `Resend Code in ${counter}s` : 'Resend Code'}
+              </button>
+            </form>
+
+            <div className="auth-footer-text">
+              <Link to="/signup" className="back-to-login">
+                <FiArrowLeft /> Back to Sign Up
+              </Link>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
   );
