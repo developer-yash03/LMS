@@ -7,7 +7,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { getDashboardRoute } from '../../utils/authValidation';
 import './Auth.css';
 
-const RESEND_SECONDS = 60;
+const RESEND_SECONDS = 120;
 
 const VerifyOtp = () => {
   const location = useLocation();
@@ -112,7 +112,7 @@ const VerifyOtp = () => {
         <form className="auth-form" onSubmit={handleVerify}>
           <div className="otp-wrapper">
             <OtpInput length={6} value={otpCode} onChange={setOtpCode} />
-            <p className="otp-meta">Code expires in 10 minutes.</p>
+            <p className="otp-meta">Code expires in 5 minutes.</p>
           </div>
 
           <button

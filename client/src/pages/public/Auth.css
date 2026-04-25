@@ -1,8 +1,23 @@
+/* Ensure the entire app-shell background is cream on specific pages */
+.app-shell:has(.auth-full-width),
+.app-shell:has(.auth-page),
+.app-shell:has(.auth-split-page),
+.app-shell:has(.home-page) {
+  background-color: #fdf5e6 !important;
+}
+
+.app-main:has(.auth-full-width),
+.app-main:has(.auth-page),
+.app-main:has(.auth-split-page),
+.app-main:has(.home-page) {
+  background-color: transparent !important;
+}
+
 .auth-page,
 .auth-split-page {
   display: flex;
-  min-height: calc(100vh - 64px);
-  background-color: #fdf5e6;
+  min-height: calc(100vh - 80px);
+  background-color: transparent;
   font-family: 'Inter', sans-serif;
   padding: 2rem 1.5rem;
   justify-content: center;
@@ -12,14 +27,7 @@
 
 .auth-full-width,
 .auth-container {
-  background-color: #fdf5e6;
-}
-
-/* Ensure the parent app-main also has the same background */
-.app-main:has(.auth-full-width),
-.app-main:has(.auth-page),
-.app-main:has(.auth-split-page) {
-  background-color: #fdf5e6 !important;
+  background-color: transparent;
 }
 
 /* Sync Navbar background on auth pages */

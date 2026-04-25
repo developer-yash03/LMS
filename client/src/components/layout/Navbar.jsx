@@ -1,18 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { FiLogIn, FiLogOut, FiMenu, FiX } from 'react-icons/fi';
+import { FiLogOut, FiMenu, FiX } from 'react-icons/fi';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../context/ToastContext';
 
-/* ── Simple Text Logo ── */
 const ScholarHubLogo = () => (
-  <span style={{ 
-    fontFamily: "'Georgia', serif", 
-    fontSize: '1.5rem', 
-    fontWeight: 'bold', 
-    color: '#2e2117',
-    letterSpacing: '0.5px'
-  }}>
+  <span className="scholarhub-logo">
     ScholarHub
   </span>
 );
@@ -30,41 +23,39 @@ const Navbar = () => {
 
   const handleLogout = () => {
     logout();
-    setTimeout(() => {
-      showToast('Logged out successfully!', 'info');
-      navigate('/', { replace: true });
-    }, 0);
+    showToast('Logged out successfully!', 'info');
+    navigate('/');
   };
 
   return (
     <nav className="navbar-top">
-      <div className="navbar-row">
-        <Link to="/" className="navbar-brand" aria-label="ScholarHub Home">
+      <div className="navbar-container">
+        <Link to="/" className="navbar-brand">
           <ScholarHubLogo />
         </Link>
 
-        <button
-          className="navbar-toggle"
-          type="button"
-          onClick={() => setMenuOpen((prev) => !prev)}
-          aria-label="Toggle navigation"
-        >
-          {menuOpen ? <FiX size={20} /> : <FiMenu size={20} />}
-        </button>
-      </div>
+        <div className={`navbar-main-links ${menuOpen ? 'active' : ''}`}>
+          <Link to="/browse" className="nav-link">Courses</Link>
+          <Link to="/instructors" className="nav-link">Instructors</Link>
+        </div>
 
-      <div className={`navbar-actions ${menuOpen ? 'mobile-open' : ''}`}>
-        <Link to="/courses" className="nav-link">Courses</Link>
-        <Link to="/instructors" className="nav-link">Instructors</Link>
-        
-        {user ? (
-          <>
-            <span className="nav-user-name">{user.name}</span>
-            <button onClick={handleLogout} className="btn btn-outline nav-button">
-              <FiLogOut size={15} /> Logout
-            </button>
-          </>
-        ) : null}
+        <div className="navbar-right">
+          {user ? (
+            <div className="user-nav-actions">
+              <span className="user-name">{user.name}</span>
+              <button onClick={handleLogout} className="logout-link">Logout</button>
+            </div>
+          ) : (
+            <div className="auth-nav-actions">
+              <Link to="/login" className="login-link">Sign in</Link>
+              <Link to="/signup" className="register-btn">Register</Link>
+            </div>
+          )}
+
+          <button className="mobile-toggle" onClick={() => setMenuOpen(!menuOpen)}>
+            {menuOpen ? <FiX /> : <FiMenu />}
+          </button>
+        </div>
       </div>
     </nav>
   );

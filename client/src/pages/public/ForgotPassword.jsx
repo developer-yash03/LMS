@@ -7,7 +7,7 @@ import { useToast } from '../../context/ToastContext';
 import { FiMail, FiLock, FiShield, FiArrowLeft, FiCheckCircle } from 'react-icons/fi';
 import './Auth.css';
 
-const RESEND_SECONDS = 60;
+const RESEND_SECONDS = 120;
 
 const getPasswordStrength = (value) => {
   let score = 0;
