@@ -2,7 +2,6 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 const { sendOtpEmail } = require("../utils/emailService");
-const mongoose = require("mongoose");
 
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
@@ -12,7 +11,6 @@ const generateToken = (id) => {
 
 exports.signup = async (req, res) => {
   try {
-    console.log("\n🚀 SIGNUP HIT\n");
     const { name, email, password, role } = req.body;
 
     if (!name || !email || !password || !role) {
@@ -21,13 +19,24 @@ exports.signup = async (req, res) => {
 
     const normalizedEmail = String(email).trim().toLowerCase();
 
+    // 1. Check if user already exists
     const existingUser = await User.findOne({ email: normalizedEmail });
     if (existingUser && existingUser.isVerified) {
-      return res.status(400).json({ message: "User already exists" });
+      return res.status(400).json({ message: "User already exists and is verified." });
+    }
+
+    // 2. Cooldown check
+    if (existingUser && existingUser.otpCooldown && existingUser.otpCooldown > Date.now()) {
+      const waitTime = Math.ceil((existingUser.otpCooldown - Date.now()) / 1000);
+      return res.status(429).json({ message: `Please wait ${waitTime} seconds before requesting a new OTP.` });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // 3. Update or create unverified user
+    // Set expireAt to 30 minutes from now
+    const expireAt = new Date(Date.now() + 30 * 60 * 1000);
 
     const user = await User.findOneAndUpdate(
       { email: normalizedEmail },
@@ -36,31 +45,13 @@ exports.signup = async (req, res) => {
         email: normalizedEmail,
         password: hashedPassword,
         otp,
-        otpExpiry: Date.now() + 10 * 60 * 1000,
+        otpExpiry: Date.now() + 5 * 60 * 1000, // 5 min expiry
+        otpCooldown: Date.now() + 2 * 60 * 1000, // 2 min cooldown
         role,
-        isVerified: false
+        isVerified: false,
+        expireAt
       },
       { upsert: true, new: true }
-    );
-
-    const sendEmail = require("../utils/sendEmail");
-    await sendEmail(normalizedEmail, otp);
-
-    const usersCollection = mongoose.connection.db.collection("users");
-    await usersCollection.updateOne(
-      { email: normalizedEmail },
-      {
-        $set: {
-          name,
-          email: normalizedEmail,
-          password: hashedPassword,
-          otp,
-          otpExpiry: Date.now() + 10 * 60 * 1000,
-          role,
-          isVerified: false
-        }
-      },
-      { upsert: true }
     );
 
     const otpEmailSent = await sendOtpEmail(normalizedEmail, otp, name);
@@ -94,42 +85,36 @@ exports.verifyOtp = async (req, res) => {
     const normalizedEmail = String(email).trim().toLowerCase();
     const normalizedOtp = String(otp).trim();
 
-    const usersCollection = mongoose.connection.db.collection("users");
-    const user = await usersCollection.findOne({ email: normalizedEmail });
+    const user = await User.findOne({ email: normalizedEmail });
 
     if (!user) {
-      return res.status(400).json({ message: "User not found" });
+      return res.status(400).json({ message: "User not found or registration expired. Please sign up again." });
     }
 
     if (user.isVerified) {
-      return res.status(200).json({
-        message: "Email already verified",
-        user: {
-          _id: user._id,
-          name: user.name,
-          email: user.email,
-          role: user.role,
-          isVerified: user.isVerified
-        },
-        token: generateToken(user._id)
-      });
-    }
-
-    if (String(user.otp).trim() !== normalizedOtp) {
-      return res.status(400).json({ message: "Invalid OTP" });
+      return res.status(200).json({ message: "Email already verified" });
     }
 
     if (user.otpExpiry < Date.now()) {
-      return res.status(400).json({ message: "OTP expired" });
+      return res.status(400).json({ message: "OTP expired. Please resend." });
     }
 
-    await usersCollection.updateOne(
+    if (String(user.otp).trim() !== normalizedOtp) {
+      return res.status(400).json({ message: "Invalid OTP." });
+    }
+
+    // SUCCESS - Verify user and remove TTL
+    await User.updateOne(
       { email: normalizedEmail },
       {
         $set: {
           isVerified: true,
           otp: null,
-          otpExpiry: null
+          otpExpiry: null,
+          otpCooldown: null
+        },
+        $unset: {
+          expireAt: "" // Remove expiry field
         }
       }
     );
@@ -162,21 +147,29 @@ exports.resendOtp = async (req, res) => {
     const user = await User.findOne({ email: normalizedEmail });
 
     if (!user) {
-      return res.status(404).json({ message: "User not found" });
+      return res.status(404).json({ message: "User not found or registration expired." });
     }
 
     if (user.isVerified) {
       return res.status(400).json({ message: "User already verified" });
     }
 
+    if (user.otpCooldown && user.otpCooldown > Date.now()) {
+      const waitTime = Math.ceil((user.otpCooldown - Date.now()) / 1000);
+      return res.status(429).json({ message: `Please wait ${waitTime} seconds before requesting a new OTP.` });
+    }
+
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     user.otp = otp;
-    user.otpExpiry = Date.now() + 10 * 60 * 1000;
+    user.otpExpiry = Date.now() + 5 * 60 * 1000; // 5 min expiry
+    user.otpCooldown = Date.now() + 2 * 60 * 1000; // 2 min cooldown
+    // Extend expiry by another 30 mins from now
+    user.expireAt = new Date(Date.now() + 30 * 60 * 1000);
     await user.save();
 
     const otpEmailSent = await sendOtpEmail(normalizedEmail, otp, user.name);
     if (!otpEmailSent) {
-      return res.status(500).json({ message: "Unable to resend OTP right now. Please try again." });
+      return res.status(500).json({ message: "Unable to resend OTP right now." });
     }
 
     return res.status(200).json({ message: "OTP resent successfully" });

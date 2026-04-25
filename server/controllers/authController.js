@@ -27,6 +27,13 @@ const login = async (req, res) => {
       return res.status(401).json({ success: false, message: "Invalid email or password" });
     }
 
+    if (!user.isVerified) {
+      return res.status(401).json({ 
+        success: false, 
+        message: "Your email is not verified. Please verify your email before logging in." 
+      });
+    }
+
     const isMatch = await bcrypt.compare(password, user.password);
 
     if (!isMatch) {
@@ -68,28 +75,27 @@ const sendOtp = async (req, res) => {
       return res.status(400).json({ message: "Email is required" });
     }
 
-    const usersCollection = mongoose.connection.db.collection("users");
-    const user = await usersCollection.findOne({ email: normalizedEmail });
+    const user = await User.findOne({ email: normalizedEmail });
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
     if (user.otpCooldown && user.otpCooldown > Date.now()) {
+      const waitTime = Math.ceil((user.otpCooldown - Date.now()) / 1000);
       return res.status(429).json({
-        message: "Too many attempts. Try later.",
+        message: `Please wait ${waitTime} seconds before requesting a new OTP.`,
       });
     }
 
     const otp = generateOtp();
 
-    await usersCollection.updateOne(
+    await User.updateOne(
       { email: normalizedEmail },
       {
         $set: {
           otp,
-          otpExpiry: Date.now() + 10 * 60 * 1000,
-          otpAttempts: 0,
-          otpCooldown: null
+          otpExpiry: Date.now() + 5 * 60 * 1000, // 5 min expiry
+          otpCooldown: Date.now() + 2 * 60 * 1000, // 2 min cooldown
         },
       }
     );
@@ -105,6 +111,7 @@ const sendOtp = async (req, res) => {
     return res.status(500).json({ message: error.message });
   }
 };
+
 const verifyOtp = async (req, res) => {
   try {
     const normalizedEmail = String(req.body?.email || "").trim().toLowerCase();
@@ -113,70 +120,39 @@ const verifyOtp = async (req, res) => {
       return res.status(400).json({ message: "Email and OTP are required" });
     }
 
-    const usersCollection = mongoose.connection.db.collection("users");
-    const user = await usersCollection.findOne({ email: normalizedEmail });
+    const user = await User.findOne({ email: normalizedEmail });
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // 1. cooldown check
-    if (user.otpCooldown && user.otpCooldown > Date.now()) {
-      return res.status(429).json({
-        message: "Cooldown active. Try later.",
-      });
-    }
-
-    // 2. expiry check
+    // 1. expiry check
     if (!user.otpExpiry || user.otpExpiry < Date.now()) {
       return res.status(400).json({
         message: "OTP expired",
       });
     }
 
-    // 3. attempt check
-    if (user.otpAttempts >= 5) {
-      await usersCollection.updateOne(
-        { email: normalizedEmail },
-        {
-          $set: {
-            otpCooldown: Date.now() + 5 * 60 * 1000,
-          },
-        }
-      );
-
-      return res.status(429).json({
-        message: "Too many attempts. Try after 5 minutes",
-      });
-    }
-
-    // 4. incorrect OTP
+    // 2. incorrect OTP
     if (String(user.otp).trim() !== normalizedOtp) {
-      await usersCollection.updateOne(
-        { email: normalizedEmail },
-        {
-          $inc: {
-            otpAttempts: 1,
-          },
-        }
-      );
-
       return res.status(400).json({
-        message: `Invalid OTP. Attempts left: ${5 - user.otpAttempts}`,
+        message: "Invalid OTP.",
       });
     }
 
-    // 5. SUCCESS
-    await usersCollection.updateOne(
+    // 3. SUCCESS
+    await User.updateOne(
       { email: normalizedEmail },
       {
         $set: {
           isVerified: true,
           otp: null,
           otpExpiry: null,
-          otpAttempts: 0,
           otpCooldown: null,
         },
+        $unset: {
+          expireAt: "" // Remove TTL when verified
+        }
       }
     );
 

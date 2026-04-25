@@ -35,19 +35,27 @@ const sendOtpEmail = async (email, otp, name = "Learner") => {
     }
 
     await mailer.sendMail({
-      from: process.env.EMAIL_USER,
+      from: `"ScholarHub" <${process.env.EMAIL_USER}>`,
       to: email,
-      subject: "Your LMS OTP Code",
+      subject: "Your ScholarHub OTP Code",
       html: `
         <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;border:1px solid #e5e7eb;border-radius:8px;">
-          <h2 style="color:#0f172a;">Email Verification</h2>
-          <p>Hi ${name},</p>
-          <p>Your one-time verification code is:</p>
-          <div style="font-size:28px;font-weight:700;letter-spacing:6px;background:#f8fafc;padding:12px 16px;display:inline-block;border-radius:6px;color:#0f172a;">
-            ${otp}
+          <div style="text-align:center; margin-bottom: 24px; padding: 20px; background-color: #fdf5e6; border-radius: 6px;">
+            <h1 style="font-family: 'Georgia', serif; color: #5d4037; margin: 0; font-size: 30px; letter-spacing: 1px;">ScholarHub</h1>
           </div>
-          <p style="margin-top:16px;">This OTP expires in 10 minutes.</p>
-          <p style="color:#475569;">If you did not request this, you can ignore this email.</p>
+          
+          <div style="text-align: center;">
+            <h2 style="color:#0f172a;">Email Verification</h2>
+            <p>Hi ${name},</p>
+            <p>Your one-time verification code is:</p>
+            <div style="font-size:32px;font-weight:700;letter-spacing:8px;background:#f8fafc;padding:16px 24px;display:inline-block;border-radius:8px;color:#0f172a;border:1px solid #e2e8f0;margin: 10px 0;">
+              ${otp}
+            </div>
+            <p style="margin-top:20px; font-weight: 500;">This OTP expires in 10 minutes.</p>
+            <p style="color:#64748b; font-size: 14px; margin-top: 24px; border-top: 1px solid #f1f5f9; padding-top: 20px;">
+              If you did not request this, you can safely ignore this email.
+            </p>
+          </div>
         </div>
       `
     });
