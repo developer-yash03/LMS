@@ -30,13 +30,7 @@
   background-color: transparent;
 }
 
-/* Sync Navbar background on auth pages */
-.navbar-top:has(~ .app-body .auth-split-page),
-.navbar-top:has(~ .app-body .auth-page) {
-  background-color: transparent !important;
-  border-bottom-color: transparent !important;
-  box-shadow: none !important;
-}
+/* Navbar sync - removed transparency override */
 
 .auth-main-container {
   display: flex;
