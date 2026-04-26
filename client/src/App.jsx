@@ -91,7 +91,7 @@ function App() {
           ref={mainScrollRef}
           className={`app-main ${showSidebar ? 'with-sidebar' : ''}`}
         >
-          <div className={(pathname === '/login' || pathname === '/signup' || pathname === '/forgot-password' || pathname.startsWith('/student') || pathname === '/my-learning') ? "auth-full-width" : "app-content"}>
+          <div className={(pathname === '/login' || pathname === '/signup' || pathname === '/forgot-password' || pathname.startsWith('/student') || pathname === '/my-learning' || pathname === '/browse') ? "auth-full-width" : "app-content"}>
             <Routes>
               {/* --- PUBLIC ROUTES --- */}
               <Route
