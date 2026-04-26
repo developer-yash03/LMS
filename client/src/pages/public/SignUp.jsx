@@ -17,12 +17,17 @@ const SignUp = () => {
   const [role, setRole] = useState('student'); // Default to student
   const [loading, setLoading] = useState(false);
   const [emailTouched, setEmailTouched] = useState(false);
+  const [passwordTouched, setPasswordTouched] = useState(false);
 
   const trimmedName = name.trim();
   const trimmedEmail = email.trim();
-  const emailValid = isValidEmail(trimmedEmail);
+  const emailValid = /^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/.test(trimmedEmail);
   const showEmailError = emailTouched && trimmedEmail.length > 0 && !emailValid;
-  const formValid = trimmedName.length > 1 && emailValid && password.length >= 6 && Boolean(role);
+  
+  const passwordValid = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/.test(password);
+  const showPasswordError = passwordTouched && password.length > 0 && !passwordValid;
+
+  const formValid = trimmedName.length > 1 && emailValid && passwordValid && Boolean(role);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -103,7 +108,8 @@ const SignUp = () => {
                     type={showPassword ? 'text' : 'password'}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="At least 6 characters"
+                    onBlur={() => setPasswordTouched(true)}
+                    placeholder="Create a strong password"
                   />
                   <button 
                     type="button" 
@@ -113,6 +119,11 @@ const SignUp = () => {
                     {showPassword ? <FiEyeOff /> : <FiEye />}
                   </button>
                 </div>
+                {showPasswordError && (
+                  <span className="error-hint" style={{ fontSize: '0.8rem', color: '#dc2626', marginTop: '0.25rem', display: 'block' }}>
+                    Password must be at least 8 characters long and include an uppercase letter, a lowercase letter, a number, and a special character.
+                  </span>
+                )}
               </div>
 
               <div className="modern-field">
