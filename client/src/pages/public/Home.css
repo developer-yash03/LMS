@@ -1,0 +1,261 @@
+.home-page {
+  background: #fdf5e6;
+  color: #2e2117;
+  font-family: 'Inter', sans-serif;
+}
+
+/* Hero Section Styles */
+.hero-split {
+  padding: 4rem 2rem;
+  background-color: #ffffff;
+  min-height: 85vh;
+  display: flex;
+  align-items: center;
+  border-radius: 24px;
+  margin: 2rem;
+  box-shadow: 0 10px 30px rgba(46, 33, 23, 0.05);
+}
+
+.hero-container {
+  max-width: 1300px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 1.1fr;
+  gap: 4rem;
+  align-items: center;
+}
+
+.hero-label {
+  display: inline-block;
+  background: #fde68a;
+  padding: 0.3rem 0.8rem;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 800;
+  margin-bottom: 1.5rem;
+}
+
+.hero-main-title {
+  font-family: 'Georgia', serif;
+  font-size: 4rem;
+  line-height: 1.1;
+  color: #2e2117;
+  margin-bottom: 1.5rem;
+  font-weight: 400;
+}
+
+.hero-main-title .highlight {
+  color: #8b4513; /* Olive/Brown highlight */
+  font-weight: 700;
+}
+
+.hero-description {
+  font-size: 1.1rem;
+  line-height: 1.6;
+  color: #6b7280;
+  margin-bottom: 2.5rem;
+  max-width: 500px;
+}
+
+.hero-btns {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 3rem;
+}
+
+.btn-primary-brown {
+  padding: 1rem 2.5rem;
+  background-color: #4b3621;
+  color: #fff;
+  border-radius: 8px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: opacity 0.2s;
+}
+
+.hero-social-proof {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.student-avatars {
+  display: flex;
+}
+
+.student-avatars img {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 3px solid #fff;
+  margin-left: -12px;
+}
+
+.student-avatars img:first-child { margin-left: 0; }
+
+.hero-social-proof p {
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.hero-image-side {
+  position: relative;
+}
+
+.hero-main-image {
+  width: 100%;
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow: 0 40px 80px rgba(46, 33, 23, 0.15);
+}
+
+.hero-main-image img {
+  width: 100%;
+  display: block;
+}
+
+/* Featured Disciplines Section */
+.featured-disciplines {
+  padding: 6rem 2rem;
+  max-width: 1300px;
+  margin: 0 auto;
+}
+
+.disciplines-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 3rem;
+}
+
+.disciplines-header h2 {
+  font-family: 'Georgia', serif;
+  font-size: 2.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.disciplines-header p {
+  color: #6b7280;
+}
+
+.view-all-text {
+  color: #2e2117;
+  font-weight: 700;
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+
+.disciplines-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+}
+
+.discipline-card-large {
+  position: relative;
+  border-radius: 20px;
+  overflow: hidden;
+  text-decoration: none;
+  color: #fff;
+  height: 600px;
+}
+
+.discipline-card-large img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.card-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 3rem;
+  background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 100%);
+}
+
+.card-tag {
+  display: inline-block;
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 1px;
+  background: rgba(255,255,255,0.2);
+  padding: 0.3rem 0.6rem;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+}
+
+.card-overlay h3 {
+  font-family: 'Georgia', serif;
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+.card-meta {
+  display: flex;
+  gap: 1.5rem;
+  font-size: 0.8rem;
+  margin-top: 1rem;
+  opacity: 0.8;
+}
+
+.disciplines-column {
+  display: grid;
+  grid-template-rows: 1fr 1fr;
+  gap: 2rem;
+}
+
+.discipline-card-small {
+  border-radius: 20px;
+  padding: 2.5rem;
+  display: flex;
+  justify-content: space-between;
+  text-decoration: none;
+  transition: transform 0.2s;
+}
+
+.discipline-card-small:hover { transform: translateY(-5px); }
+
+.discipline-card-small.dark {
+  background-color: #4b3621;
+  color: #fff;
+}
+
+.discipline-card-small.light {
+  background-color: #fff;
+  color: #2e2117;
+  border: 1px solid #e5e7eb;
+}
+
+.discipline-card-small h3 {
+  font-family: 'Georgia', serif;
+  font-size: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.learn-more {
+  display: block;
+  margin-top: 1.5rem;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.card-visual {
+  width: 140px;
+  height: 140px;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.card-visual img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+@media (max-width: 1024px) {
+  .hero-container { grid-template-columns: 1fr; }
+  .disciplines-grid { grid-template-columns: 1fr; }
+  .discipline-card-large { height: 400px; }
+}

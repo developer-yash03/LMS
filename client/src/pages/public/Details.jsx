@@ -1,8 +1,6 @@
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { FiCheckCircle, FiShield, FiClock, FiGlobe, FiAward, FiPlay } from 'react-icons/fi';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useCourse } from '../../hooks/useCourse';
-import { useCourseContext } from '../../context/CourseContext';
 import { useAuth } from '../../hooks/useAuth';
 import BackButton from '../../components/common/BackButton';
 import { useToast } from '../../context/ToastContext';
@@ -21,25 +19,59 @@ const loadScript = (src) => {
 const Details = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { singleCourse, loading } = useCourse(id);
-  const { enrollInCourse, isEnrolled, getProgress } = useCourseContext();
   const { user } = useAuth();
   const { showToast } = useToast();
 
-  if (loading) return <p>Loading details...</p>;
+  const [course, setCourse] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [enrolled, setEnrolled] = useState(false);
+  const [progress, setProgress] = useState(0);
 
-  if (!singleCourse) {
-    return (
-      <div style={{ textAlign: 'center', padding: '4rem 0' }}>
-        <h3>Course not found</h3>
-        <p>The selected course is unavailable right now.</p>
-        <BackButton to="/browse" label="Browse Courses" />
-      </div>
-    );
-  }
+  useEffect(() => {
+    const fetchDetails = async () => {
+      setLoading(true);
+      try {
+        const response = await apiRequest(`/courses/${id}`);
+        setCourse(response.data);
+      } catch (error) {
+        showToast(error.message || 'Failed to load course details', 'error');
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const enrolled = isEnrolled(singleCourse.id);
-  const progress = enrolled ? getProgress(singleCourse.id) : 0;
+    fetchDetails();
+  }, [id, showToast]);
+
+  useEffect(() => {
+    const fetchEnrollmentStatus = async () => {
+      if (!user || !id) {
+        setEnrolled(false);
+        setProgress(0);
+        return;
+      }
+
+      try {
+        const enrolledResponse = await apiRequest('/courses/student/enrolled-courses');
+        const exists = (enrolledResponse.data || []).some((item) => String(item._id) === String(id));
+        setEnrolled(exists);
+
+        if (exists) {
+          try {
+            const progressResponse = await apiRequest(`/courses/${id}/progress`);
+            setProgress(progressResponse?.data?.progressPercentage || 0);
+          } catch {
+            setProgress(0);
+          }
+        }
+      } catch {
+        setEnrolled(false);
+        setProgress(0);
+      }
+    };
+
+    fetchEnrollmentStatus();
+  }, [id, user]);
 
   const handleEnroll = async () => {
     if (!user) {
@@ -48,15 +80,25 @@ const Details = () => {
       return;
     }
 
-    if (enrolled) {
-      navigate(`/player/${singleCourse.id}`);
+    if (!course) {
       return;
     }
 
-    if (singleCourse.price === 0) {
-      enrollInCourse(singleCourse.id);
-      showToast('Successfully enrolled in the course!', 'success');
-      navigate('/my-learning');
+    if (enrolled) {
+      navigate(`/player/${course._id}`);
+      return;
+    }
+
+    if (course.price === 0) {
+      try {
+        await apiRequest(`/courses/${course._id}/enroll`, 'POST', {});
+        showToast('Successfully enrolled in the course!', 'success');
+        setEnrolled(true);
+        setProgress(0);
+        navigate('/my-learning');
+      } catch (error) {
+        showToast(error.message || 'Enrollment failed', 'error');
+      }
       return;
     }
 
@@ -68,14 +110,14 @@ const Details = () => {
     }
 
     try {
-      const orderResponse = await apiRequest("/payment/create-order", "POST", { courseId: singleCourse.id });
+      const orderResponse = await apiRequest("/payment/create-order", "POST", { courseId: course._id });
       
       const options = {
         key: orderResponse.keyId,
         amount: orderResponse.amount,
         currency: orderResponse.currency,
         name: "LMS Platform",
-        description: `Enrollment for ${singleCourse.title}`,
+        description: `Enrollment for ${course.title}`,
         order_id: orderResponse.orderId,
         handler: async function (response) {
           try {
@@ -88,8 +130,14 @@ const Details = () => {
             const verifyRes = await apiRequest("/payment/verify", "POST", verifyData);
             
             if(verifyRes.message) {
-               enrollInCourse(singleCourse.id);
+               try {
+                 await apiRequest(`/courses/${course._id}/enroll`, 'POST', {});
+               } catch (e) {
+                 // Already enrolled
+               }
                showToast('Successfully enrolled in the course!', 'success');
+               setEnrolled(true);
+               setProgress(0);
                navigate('/my-learning');
             } else {
                showToast(verifyRes.error || "Payment verification failed", "error");
@@ -115,6 +163,27 @@ const Details = () => {
     }
   };
 
+  const normalizedInstructor = useMemo(() => {
+    if (!course) return 'Instructor';
+    if (typeof course.instructor === 'object') {
+      return course.instructor?.name || 'Instructor';
+    }
+    return course.instructor || 'Instructor';
+  }, [course]);
+
+  if (loading) return <p>Loading details...</p>;
+
+  if (!course) {
+    return (
+      <div style={{ textAlign: 'center', padding: '4rem 0' }}>
+        <h3>Course not found</h3>
+        <p>The selected course is unavailable right now.</p>
+        <BackButton to="/browse" label="Browse Courses" />
+      </div>
+    );
+  }
+
+
   return (
     <div className="page-container" style={{ padding: 0 }}>
       <div style={{ padding: '0 2rem' }}>
@@ -123,19 +192,25 @@ const Details = () => {
 
       <div className="details-hero">
         <div style={{ maxWidth: '800px', margin: '0 auto', padding: '0 2rem' }}>
-          <h1>{singleCourse.title}</h1>
-          <p>
-            Master the skills you need to advance your career. This comprehensive program covers everything from foundational principles to advanced techniques.
-          </p>
+          <h1>{course.title}</h1>
+          <p>{course.description || 'Master practical skills with guided modules and topic-wise lessons.'}</p>
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginTop: '1.5rem', color: '#d1d5db', fontSize: '0.95rem' }}>
-            <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}><FiClock /> Approx. 4 months to complete</span>
-            <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}><FiGlobe /> English</span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              <FiClock /> {course.duration ? `${course.duration} hours` : 'Self-paced'}
+            </span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              <FiGlobe /> English
+            </span>
           </div>
           <div style={{ marginTop: '2rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(singleCourse.instructor || 'Instructor')}&background=0056D2&color=fff`} alt="Instructor" style={{ borderRadius: '50%', width: '50px', height: '50px' }} />
+            <img
+              src={`https://ui-avatars.com/api/?name=${encodeURIComponent(normalizedInstructor)}&background=0056D2&color=fff`}
+              alt="Instructor"
+              style={{ borderRadius: '50%', width: '50px', height: '50px' }}
+            />
             <div>
-              <span style={{ display: 'block', fontWeight: '600', color: '#fff' }}>Instructor: {singleCourse.instructor}</span>
-              <span style={{ fontSize: '0.85rem' }}>Top Instructor</span>
+              <span style={{ display: 'block', fontWeight: '600', color: '#fff' }}>Instructor: {normalizedInstructor}</span>
+              <span style={{ fontSize: '0.85rem' }}>{course.level || 'Beginner'} level</span>
             </div>
           </div>
         </div>
@@ -148,19 +223,19 @@ const Details = () => {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '1.5rem' }}>
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
                 <FiCheckCircle color="var(--primary-blue)" style={{ flexShrink: 0, marginTop: '0.25rem' }} />
-                <span>Build real-world applications using modern frameworks.</span>
+                <span>Structured modules and topic-wise progression.</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
                 <FiCheckCircle color="var(--primary-blue)" style={{ flexShrink: 0, marginTop: '0.25rem' }} />
-                <span>Understand and apply advanced architectural patterns.</span>
+                <span>Track your progress as you complete lessons.</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
                 <FiCheckCircle color="var(--primary-blue)" style={{ flexShrink: 0, marginTop: '0.25rem' }} />
-                <span>Optimize performance and scale your applications.</span>
+                <span>Hands-on content aligned to real-world outcomes.</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
                 <FiCheckCircle color="var(--primary-blue)" style={{ flexShrink: 0, marginTop: '0.25rem' }} />
-                <span>Prepare for technical interviews and career growth.</span>
+                <span>Learn at your own pace with repeatable access.</span>
               </div>
             </div>
           </section>
@@ -168,12 +243,12 @@ const Details = () => {
           <section className="syllabus-section">
             <h2>Syllabus</h2>
             <ul className="syllabus-list">
-              {(singleCourse.modules || []).map((mod, i) => (
-                <li key={i}>
+              {(course.modules || []).map((mod, i) => (
+                <li key={mod._id || i}>
                   <div>
                     <h4 style={{ margin: 0, fontSize: '1.125rem' }}>{mod.title}</h4>
                     <p style={{ margin: '0.5rem 0 0', fontSize: '0.9rem' }}>
-                      {mod.topics.length} items · {mod.topics.map(t => t.duration).join(', ')}
+                      {(mod.topics || []).length} topics
                     </p>
                   </div>
                 </li>
@@ -185,12 +260,12 @@ const Details = () => {
         <aside>
           <div className="purchase-card">
             <img
-              src={`https://picsum.photos/seed/${singleCourse.id}/800/450`}
+              src={course.thumbnail || `https://picsum.photos/seed/${course._id}/800/450`}
               alt="Course preview"
               className="purchase-img"
             />
             <h3 style={{ fontSize: '1.75rem', marginBottom: '1rem' }}>
-              {singleCourse.price === 0 ? 'Free' : `₹${singleCourse.price}`}
+              {course.price === 0 ? 'Free' : `₹${course.price}`}
             </h3>
 
             <button
@@ -199,29 +274,31 @@ const Details = () => {
               onClick={handleEnroll}
             >
               {enrolled ? (
-                <><FiPlay /> Continue Learning ({progress}%)</>
+                <>
+                  <FiPlay /> Continue Learning ({progress}%)
+                </>
               ) : (
-                <>Enroll for {singleCourse.price === 0 ? 'Free' : `₹${singleCourse.price}`}</>
+                <>Enroll for {course.price === 0 ? 'Free' : `₹${course.price}`}</>
               )}
             </button>
 
             <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', textAlign: 'center', margin: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem' }}>
-              <FiShield /> 14-day money-back guarantee
+              <FiShield /> Secure access with your verified account
             </p>
             <hr style={{ border: 'none', borderTop: '1px solid var(--border-color)', margin: '1.5rem 0' }} />
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                 <FiAward color="var(--primary-blue)" size={24} />
                 <div>
-                  <strong style={{ display: 'block', fontSize: '0.95rem' }}>Shareable Certificate</strong>
-                  <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Add to your LinkedIn profile</span>
+                  <strong style={{ display: 'block', fontSize: '0.95rem' }}>Progress Tracking</strong>
+                  <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>See completion updates topic by topic</span>
                 </div>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                 <FiClock color="var(--primary-blue)" size={24} />
                 <div>
-                  <strong style={{ display: 'block', fontSize: '0.95rem' }}>Flexible Deadlines</strong>
-                  <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Reset deadlines in accordance to your schedule.</span>
+                  <strong style={{ display: 'block', fontSize: '0.95rem' }}>Flexible Learning</strong>
+                  <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Resume anytime from your dashboard</span>
                 </div>
               </div>
             </div>

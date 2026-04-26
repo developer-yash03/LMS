@@ -19,12 +19,14 @@ const Sidebar = () => {
 
   const menuItems = {
     student: [
-      { name: 'My Learning', path: '/my-learning', icon: FiBookOpen },
+      { name: 'Dashboard', path: '/student/dashboard', icon: FiGrid },
+      { name: 'My Courses', path: '/student/courses', icon: FiBookOpen },
+      { name: 'My Learning', path: '/my-learning', icon: FiClock },
       { name: 'History', path: '/history', icon: FiClock },
     ],
     instructor: [
       { name: 'Dashboard', path: '/instructor/dashboard', icon: FiGrid },
-      { name: 'Create Course', path: '/instructor/create', icon: FiPlusSquare },
+      { name: 'Manage Courses', path: '/instructor/courses', icon: FiPlusSquare },
     ],
     admin: [
       { name: 'Admin Dashboard', path: '/admin/dashboard', icon: FiShield },

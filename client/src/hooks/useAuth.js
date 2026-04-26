@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import AuthContext from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { apiRequest } from '../services/api';
+import { getDashboardRoute } from '../utils/authValidation';
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
@@ -34,13 +35,9 @@ export const useAuthActions = () => {
       login(loggedUser);
       showToast(`Welcome back, ${loggedUser.name}!`);
 
-      // Navigate to role-appropriate dashboard
-      const dashboardRoutes = {
-        admin: '/admin/dashboard',
-        instructor: '/instructor/dashboard',
-        student: '/my-learning',
-      };
-      navigate(dashboardRoutes[loggedUser.role] || '/');
+      // Normalize role before redirect to avoid casing mismatches from API
+      const normalizedRole = String(loggedUser.role || 'student').toLowerCase();
+      navigate(getDashboardRoute(normalizedRole));
     } catch (error) {
       showToast(error.message || "Login failed", "error");
     }

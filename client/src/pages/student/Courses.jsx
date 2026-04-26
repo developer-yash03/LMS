@@ -1,79 +1,73 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { FiBook, FiClock, FiCheckCircle, FiArrowRight, FiPlay, FiUsers, FiStar } from 'react-icons/fi';
 import { Link } from 'react-router-dom';
-import { FiBookOpen, FiPlay, FiCheckCircle, FiArrowRight, FiUsers } from 'react-icons/fi';
-import { useToast } from '../../context/ToastContext';
-import { useAuth } from '../../hooks/useAuth';
 import { apiRequest } from '../../services/api';
-import './MyLearning.css';
+import { useAuth } from '../../hooks/useAuth';
+import './Courses.css';
 
-const MyLearning = () => {
+const Courses = () => {
   const { user } = useAuth();
-  const { showToast } = useToast();
 
-  const [enrolledCourses, setEnrolledCourses] = useState([]);
-  const [progressByCourse, setProgressByCourse] = useState({});
+  const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchEnrolledCourses = async () => {
       if (!user) {
         setLoading(false);
-        setEnrolledCourses([]);
+        setCourses([]);
         return;
       }
 
       setLoading(true);
       try {
-        // TODO: Backend Integration - Fetch student's enrolled courses with progress
-        // Expected API: GET /api/courses/student/enrolled-courses
-        // Response: { data: [{ _id, title, thumbnail, instructor, progressPercentage }] }
-        const enrolledResponse = await apiRequest('/courses/student/enrolled-courses');
-        const courses = enrolledResponse.data || [];
-        setEnrolledCourses(courses);
-
-        // TODO: Backend Integration - Fetch progress for each course
-        // This could be optimized to fetch all progress in one call
-        const progressEntries = await Promise.all(
-          courses.map(async (course) => {
-            try {
-              const progressResponse = await apiRequest(`/courses/${course._id}/progress`);
-              return [course._id, progressResponse?.data?.progressPercentage || 0];
-            } catch {
-              return [course._id, 0];
-            }
-          })
-        );
-
-        setProgressByCourse(Object.fromEntries(progressEntries));
+        // TODO: Backend Integration - Fetch student's enrolled courses
+        // Expected API: GET /api/students/courses
+        // Response should contain:
+        // {
+        //   courses: [{
+        //     _id,
+        //     title,
+        //     description,
+        //     thumbnail,
+        //     instructor: { name },
+        //     completionPercentage,
+        //     category,
+        //     totalLessons,
+        //     completedLessons,
+        //     rating,
+        //     reviewCount
+        //   }]
+        // }
+        const data = await apiRequest('/students/courses', 'GET');
+        setCourses(data?.courses || []);
       } catch (error) {
-        showToast(error.message || 'Failed to load enrolled courses', 'error');
+        console.error('Failed to load courses:', error);
       } finally {
         setLoading(false);
       }
     };
 
     fetchEnrolledCourses();
-  }, [showToast, user]);
-
-  const courses = useMemo(() => enrolledCourses || [], [enrolledCourses]);
+  }, [user]);
 
   return (
     <div className="student-page">
       <div className="student-header-banner">
         <div className="student-header-content">
-          <span className="student-header-label">MY LEARNING</span>
+          <span className="student-header-label">MY COURSES</span>
           <h1>Continue Learning</h1>
-          <p>Pick up where you left off and keep building your skills.</p>
+          <p>Track your progress and pick up where you left off.</p>
         </div>
         <div className="student-header-visual">
-          <FiBookOpen size={64} />
+          <FiBook size={64} />
         </div>
       </div>
 
       {courses.length === 0 ? (
         <div className="student-empty-card">
           <div className="student-empty-icon">
-            <FiBookOpen size={48} />
+            <FiBook size={48} />
           </div>
           <h3>No courses yet</h3>
           <p>You haven't enrolled in any courses. Start your learning journey today!</p>
@@ -84,13 +78,9 @@ const MyLearning = () => {
       ) : (
         <div className="courses-grid-auth">
           {courses.map((course) => {
-            const progress = progressByCourse[course._id] || 0;
+            const progress = course.completionPercentage || 0;
             const isComplete = progress === 100;
-            const instructor =
-              typeof course.instructor === 'object'
-                ? course.instructor?.name
-                : course.instructor;
-
+            
             return (
               <Link
                 key={course._id}
@@ -100,7 +90,7 @@ const MyLearning = () => {
                 <div className="course-card-image-auth">
                   <img
                     src={course.thumbnail || `https://picsum.photos/seed/${course._id}/800/450`}
-                    alt={`${course.title} thumbnail`}
+                    alt={course.title}
                   />
                   {isComplete && (
                     <div className="course-card-completed-badge">
@@ -113,8 +103,14 @@ const MyLearning = () => {
                   <span className="course-card-tag">{course.category || 'Course'}</span>
                   <h3 className="course-card-title-auth">{course.title}</h3>
                   <p className="course-card-instructor-auth">
-                    <FiUsers size={14} /> {instructor || 'Instructor'}
+                    <FiUsers size={14} /> {course.instructor?.name || 'Instructor'}
                   </p>
+                  
+                  {course.rating && (
+                    <p className="course-card-rating-auth">
+                      <FiStar fill="#b4690e" color="#b4690e" /> {course.rating} <span>({course.reviewCount} reviews)</span>
+                    </p>
+                  )}
                   
                   <div className="course-card-progress-auth">
                     <div className="progress-track-auth">
@@ -143,4 +139,4 @@ const MyLearning = () => {
   );
 };
 
-export default MyLearning;
+export default Courses;
