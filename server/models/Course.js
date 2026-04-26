@@ -18,6 +18,7 @@ const courseSchema = new mongoose.Schema({
   },
   price: {
     type: Number,
+    required: true,
     default: 0 // 0 means free
   },
   level: {
@@ -55,5 +56,4 @@ const courseSchema = new mongoose.Schema({
 
 // Index for search and filtering
 courseSchema.index({ title: "text", description: "text" });
-
 module.exports = mongoose.model("Course", courseSchema);
