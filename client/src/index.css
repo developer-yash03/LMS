@@ -287,6 +287,36 @@ p { margin-top: 0; margin-bottom: 1rem; color: var(--text-muted); }
   font-size: 0.9375rem;
 }
 
+.user-nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.user-name {
+  color: #4b5563;
+  font-weight: 600;
+  font-size: 0.9375rem;
+}
+
+.logout-link {
+  background: none;
+  border: 1px solid #e5e7eb;
+  color: #6b7280;
+  padding: 0.4rem 0.75rem;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.logout-link:hover {
+  background: #fef2f2;
+  border-color: #dc2626;
+  color: #dc2626;
+}
+
 .mobile-toggle {
   display: none;
   background: none;

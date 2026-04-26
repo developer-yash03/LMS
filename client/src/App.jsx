@@ -20,6 +20,10 @@ import ForgotPassword from './pages/public/ForgotPassword.jsx';
 import History from './pages/student/History.jsx';
 import MyLearning from './pages/student/MyLearning.jsx';
 import Player from './pages/student/Player.jsx';
+import StudentDashboard from './pages/student/Dashboard.jsx';
+import Courses from './pages/student/Courses.jsx';
+import Tasks from './pages/student/Tasks.jsx';
+import Profile from './pages/student/Profile.jsx';
 
 // Instructor Pages
 import InstructorDash from './pages/instructor/Dashboard.jsx';
@@ -64,7 +68,7 @@ function App() {
   const { user } = useAuth();
   const mainScrollRef = useRef(null);
 
-  const dashboardPrefixes = ['/my-learning', '/player/', '/history', '/instructor', '/admin'];
+  const dashboardPrefixes = ['/my-learning', '/player/', '/history', '/instructor', '/admin', '/student'];
   const showSidebar = dashboardPrefixes.some((prefix) => pathname.startsWith(prefix));
   const authPaths = ['/verify-otp', '/forgot-password', '/reset'];
 
@@ -87,7 +91,7 @@ function App() {
           ref={mainScrollRef}
           className={`app-main ${showSidebar ? 'with-sidebar' : ''}`}
         >
-          <div className={(pathname === '/login' || pathname === '/signup' || pathname === '/forgot-password') ? "auth-full-width" : "app-content"}>
+          <div className={(pathname === '/login' || pathname === '/signup' || pathname === '/forgot-password' || pathname.startsWith('/student') || pathname === '/my-learning') ? "auth-full-width" : "app-content"}>
             <Routes>
               {/* --- PUBLIC ROUTES --- */}
               <Route
@@ -103,6 +107,38 @@ function App() {
               <Route path="/reset" element={<ForgotPassword />} />
 
               {/* --- STUDENT ROUTES (Protected) --- */}
+              <Route
+                path="/student/dashboard"
+                element={
+                  <Protected>
+                    <StudentDashboard />
+                  </Protected>
+                }
+              />
+              <Route
+                path="/student/courses"
+                element={
+                  <Protected>
+                    <Courses />
+                  </Protected>
+                }
+              />
+              <Route
+                path="/student/tasks"
+                element={
+                  <Protected>
+                    <Tasks />
+                  </Protected>
+                }
+              />
+              <Route
+                path="/student/profile"
+                element={
+                  <Protected>
+                    <Profile />
+                  </Protected>
+                }
+              />
               <Route
                 path="/my-learning"
                 element={
