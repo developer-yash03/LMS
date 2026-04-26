@@ -1,0 +1,361 @@
+/* Student Page Base */
+.student-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Header Banner - matches home-page hero style */
+.student-header-banner {
+  background: linear-gradient(135deg, #2e2117 0%, #4a3728 100%);
+  border-radius: 24px;
+  padding: 2.5rem 3rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.student-header-banner::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -10%;
+  width: 300px;
+  height: 300px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 50%;
+}
+
+.student-header-content {
+  position: relative;
+  z-index: 1;
+}
+
+.student-header-label {
+  display: inline-block;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  color: rgba(255, 255, 255, 0.6);
+  margin-bottom: 0.75rem;
+}
+
+.student-header-content h1 {
+  font-family: 'Georgia', serif;
+  font-size: 2.25rem;
+  color: #fff;
+  margin-bottom: 0.5rem;
+  line-height: 1.2;
+}
+
+.student-header-content p {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 1.05rem;
+  margin: 0;
+}
+
+.student-header-visual {
+  color: rgba(255, 255, 255, 0.1);
+  position: relative;
+  z-index: 1;
+}
+
+/* Stats Row */
+.student-stats-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+}
+
+.student-stat-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.5rem;
+  background: #fff;
+  border-radius: 24px;
+  box-shadow: 0 25px 50px -12px rgba(46, 33, 23, 0.1);
+  position: relative;
+}
+
+.student-stat-icon {
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16px;
+  flex-shrink: 0;
+}
+
+.student-stat-info {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.student-stat-value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #2e2117;
+  line-height: 1.2;
+}
+
+.student-stat-label {
+  font-size: 0.9rem;
+  color: #6b7280;
+}
+
+.student-stat-badge {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #16A34A;
+  background: #dcfce7;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+}
+
+/* Content Grid */
+.student-content-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem;
+}
+
+/* Panel - matches auth form card style */
+.student-panel {
+  background: #fff;
+  border-radius: 24px;
+  box-shadow: 0 25px 50px -12px rgba(46, 33, 23, 0.1);
+  overflow: hidden;
+}
+
+.student-panel.full-width {
+  grid-column: 1 / -1;
+}
+
+.student-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.student-panel-header h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #2e2117;
+  margin: 0;
+}
+
+.student-panel-tag {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #2e2117;
+  background: #f3f4f6;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+}
+
+.student-panel-body {
+  padding: 1.25rem 1.5rem;
+}
+
+.student-panel-empty {
+  text-align: center;
+  padding: 2rem 1rem;
+  color: #6b7280;
+  font-size: 0.95rem;
+}
+
+/* List Items */
+.student-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.student-list-item {
+  padding: 1rem;
+  background: #f9fafb;
+  border-radius: 12px;
+}
+
+.student-list-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.35rem;
+}
+
+.student-list-title {
+  font-weight: 600;
+  color: #2e2117;
+  font-size: 0.95rem;
+}
+
+.student-list-badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+}
+
+.student-list-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.8rem;
+  color: #6b7280;
+}
+
+.student-grades-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding-top: 0.5rem;
+  margin-top: 0.5rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.student-grade-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+}
+
+.student-grade-row span:first-child {
+  color: #6b7280;
+}
+
+.student-grade-score {
+  font-weight: 600;
+  color: #0056d2;
+}
+
+/* Schedule Item */
+.student-schedule-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border-radius: 12px;
+  transition: background 0.15s;
+}
+
+.student-schedule-item:hover {
+  background: #f9fafb;
+}
+
+.student-schedule-icon {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+
+.student-schedule-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.student-schedule-title {
+  font-weight: 500;
+  color: #2e2117;
+  font-size: 0.9rem;
+}
+
+.student-schedule-meta {
+  font-size: 0.8rem;
+  color: #6b7280;
+}
+
+/* Table */
+.student-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.student-table th {
+  text-align: left;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.student-table td {
+  padding: 1rem 0;
+  font-size: 0.9rem;
+  color: #2e2117;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.student-table tr:last-child td {
+  border-bottom: none;
+}
+
+.student-grade-badge {
+  font-weight: 600;
+  color: #0056d2;
+  background: #dbeafe;
+  padding: 0.25rem 0.6rem;
+  border-radius: 6px;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .student-stats-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .student-content-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .student-header-banner {
+    padding: 2rem 1.5rem;
+    flex-direction: column;
+    text-align: center;
+    gap: 1.5rem;
+  }
+
+  .student-header-content h1 {
+    font-size: 1.75rem;
+  }
+
+  .student-stats-row {
+    grid-template-columns: 1fr;
+  }
+
+  .student-stat-card {
+    padding: 1.25rem;
+  }
+
+  .student-stat-value {
+    font-size: 1.5rem;
+  }
+}
