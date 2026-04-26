@@ -203,7 +203,9 @@ exports.enrollCourse = async (req, res) => {
     if (!user.enrolledCourses) {
       user.enrolledCourses = [];
     }
-    user.enrolledCourses.push(courseId);
+    if (!user.enrolledCourses.includes(courseId)) {
+      user.enrolledCourses.push(courseId);
+    }
     await user.save();
 
     // Create progress record
@@ -235,9 +237,18 @@ exports.getEnrolledCourses = async (req, res) => {
       return res.status(404).json({ success: false, message: "User not found" });
     }
 
+    const uniqueCourses = [];
+    const seen = new Set();
+    for (const course of user.enrolledCourses) {
+      if (course && !seen.has(course._id.toString())) {
+        seen.add(course._id.toString());
+        uniqueCourses.push(course);
+      }
+    }
+
     res.status(200).json({
       success: true,
-      data: user.enrolledCourses
+      data: uniqueCourses
     });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });

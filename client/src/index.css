@@ -1634,3 +1634,8 @@ p { margin-top: 0; margin-bottom: 1rem; color: var(--text-muted); }
     width: auto;
   }
 }
+
+/* Hide Razorpay Test Mode Banner */
+.razorpay-container .razorpay-backdrop span {
+  display: none !important;
+}

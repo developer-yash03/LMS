@@ -6,7 +6,7 @@ const User = require("../models/User");
 
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID || "test_key",
-  key_secret: process.env.RAZORPAY_KEY_SECRET || "test_secret",
+  key_secret: process.env.RAZORPAY_SECRET || "test_secret",
 });
 
 exports.createOrder = async (req, res) => {
@@ -70,7 +70,7 @@ exports.verifyPayment = async (req, res) => {
 
     const sign = razorpay_order_id + "|" + razorpay_payment_id;
     const expectedSign = crypto
-      .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET || "test_secret")
+      .createHmac("sha256", process.env.RAZORPAY_SECRET || "test_secret")
       .update(sign.toString())
       .digest("hex");
 
