@@ -146,15 +146,13 @@ p { margin-top: 0; margin-bottom: 1rem; color: var(--text-muted); }
 .app-shell {
   display: flex;
   flex-direction: column;
-  height: 100vh;
-  overflow: hidden;
+  min-height: 100vh;
   background: #f8fafc;
 }
 .app-body {
   display: flex;
   flex: 1;
-  margin-top: 64px; /* navbar height */
-  overflow: hidden;
+  /* No fixed margin for navbar anymore */
 }
 .app-body.no-navbar {
   margin-top: 0;
@@ -162,37 +160,46 @@ p { margin-top: 0; margin-bottom: 1rem; color: var(--text-muted); }
 .app-sidebar {
   width: 260px;
   min-width: 260px;
-  height: calc(100vh - 64px);
+  position: sticky;
+  top: 0;
+  height: 100vh;
   overflow-y: auto;
   padding: 16px 12px;
   border-right: 1px solid var(--border-color);
   background: var(--bg-surface);
   flex-shrink: 0;
+  z-index: 10;
 }
 .app-main {
   flex: 1;
-  overflow-y: auto;
   padding: 24px;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .app-content {
+  flex: 1;
+  width: 100%;
   max-width: 1200px;
   margin: 0 auto;
 }
 
 /* ═══════════════════════════════════════════
-   Navbar (Fixed, Single Row)
+   Navbar (Relative, Reduced Width)
    ═══════════════════════════════════════════ */
 .navbar-top {
-  position: fixed;
-  top: 0; left: 0; right: 0;
+  position: relative;
   height: 80px;
   background: #ffffff;
   z-index: 1000;
   display: flex;
   align-items: center;
   border-bottom: 1px solid #f3f4f6;
+  max-width: none;
+  width: 100%;
+  margin: 0;
+  border-radius: 0;
 }
 
 .navbar-container {
