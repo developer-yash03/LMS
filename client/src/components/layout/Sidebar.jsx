@@ -7,16 +7,27 @@ import {
   FiPlusSquare,
   FiShield,
   FiUsers,
-  FiHeart
+  FiHeart,
+  FiLogOut
 } from 'react-icons/fi';
 import { useAuth } from '../../hooks/useAuth';
+import { useNavigate } from 'react-router-dom';
+import { useToast } from '../../context/ToastContext';
 
 const Sidebar = () => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const { pathname } = useLocation();
+  const navigate = useNavigate();
+  const { showToast } = useToast();
 
   // Guard: render nothing if user is not logged in
   if (!user) return null;
+
+  const handleLogout = () => {
+    logout();
+    showToast('Logged out successfully!', 'info');
+    navigate('/');
+  };
 
   const menuItems = {
     student: [
@@ -50,14 +61,19 @@ const Sidebar = () => {
         {roleLabel[user.role] || `${user.role} Portal`}
       </span>
 
-      {/* Role avatar */}
+      {/* Greeting and Role avatar */}
       <div className="sidebar-user-info">
-        <img
-          src={`https://ui-avatars.com/api/?name=${encodeURIComponent(user.name || 'User')}&background=0056D2&color=fff&size=36&font-size=0.45&bold=true`}
-          alt="User"
-          className="sidebar-avatar"
-        />
-        <span className="sidebar-username">{user.name}</span>
+        <div className="sidebar-greeting">
+          <p className="greeting-text">Hello,</p>
+          <h3 className="greeting-name">{user.name.split(' ')[0]}!</h3>
+        </div>
+        <div className="avatar-wrapper">
+          <img
+            src={`https://ui-avatars.com/api/?name=${encodeURIComponent(user.name || 'User')}&background=0056D2&color=fff&size=36&font-size=0.45&bold=true`}
+            alt="User"
+            className="sidebar-avatar"
+          />
+        </div>
       </div>
 
       {/* Navigation items */}
@@ -74,6 +90,14 @@ const Sidebar = () => {
           </li>
         ))}
       </ul>
+
+      {/* Logout button */}
+      <div className="sidebar-footer">
+        <button onClick={handleLogout} className="sidebar-logout-btn">
+          <FiLogOut size={18} />
+          Logout
+        </button>
+      </div>
     </div>
   );
 };

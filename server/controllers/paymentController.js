@@ -1,5 +1,6 @@
 const Razorpay = require("razorpay");
 const crypto = require("crypto");
+const mongoose = require("mongoose");
 const Order = require("../models/Payment");
 const Course = require("../models/Course");
 const User = require("../models/User");
@@ -17,7 +18,6 @@ exports.createOrder = async (req, res) => {
     let price = 500;
     
     // Check if courseId is a valid ObjectId
-    const mongoose = require("mongoose");
     if (mongoose.Types.ObjectId.isValid(courseId)) {
       const course = await Course.findById(courseId);
       if (course) {
@@ -29,10 +29,16 @@ exports.createOrder = async (req, res) => {
       if (courseId === '3') price = 299;
     }
 
+    // Razorpay does not support amounts less than 1.00 INR (100 paise)
+    // If the price is 0, the frontend should handle it, but we add a safety check here.
+    if (!price || price <= 0) {
+      return res.status(400).json({ error: "Invalid price. This course might be free or price not set correctly." });
+    }
+
     const options = {
-      amount: price * 100, // amount in smallest currency unit (paise)
+      amount: Math.round(price * 100), // amount in smallest currency unit (paise), rounded to nearest integer
       currency: "INR",
-      receipt: `receipt_order_${Math.random() * 10000}`,
+      receipt: `receipt_order_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
     };
 
     const order = await razorpay.orders.create(options);
@@ -86,17 +92,19 @@ exports.verifyPayment = async (req, res) => {
         const user = await User.findById(order.user);
         if (user) {
           // Enroll user in course
-          await User.findByIdAndUpdate(order.user, {
-              $addToSet: { enrolledCourses: order.course._id }
-          });
+          if (order.course && order.course._id) {
+            await User.findByIdAndUpdate(order.user, {
+                $addToSet: { enrolledCourses: order.course._id }
+            });
 
-          // Send Receipt Email
-          const { sendReceiptEmail } = require("../utils/emailService");
-          await sendReceiptEmail(user.email, user.name, {
-            courseName: order.course.title || 'Course Enrollment',
-            amount: order.amount,
-            paymentId: order.paymentId
-          });
+            // Send Receipt Email
+            const { sendReceiptEmail } = require("../utils/emailService");
+            await sendReceiptEmail(user.email, user.name, {
+              courseName: order.course.title || 'Course Enrollment',
+              amount: order.amount,
+              paymentId: order.paymentId
+            });
+          }
         }
       }
 
