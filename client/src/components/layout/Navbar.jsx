@@ -39,8 +39,7 @@ const Navbar = () => {
         <div className="navbar-right">
           {user ? (
             <div className="user-nav-actions">
-              <span className="user-name">{user.name}</span>
-              <button onClick={handleLogout} className="logout-link">Logout</button>
+              {/* Logout button and user name moved to sidebar */}
             </div>
           ) : (
             <div className="auth-nav-actions">

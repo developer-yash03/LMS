@@ -89,7 +89,7 @@ const Details = () => {
       return;
     }
 
-    if (course.price === 0) {
+    if (Number(course.price) === 0) {
       try {
         await apiRequest(`/courses/${course._id}/enroll`, 'POST', {});
         showToast('Successfully enrolled in the course!', 'success');
@@ -159,7 +159,8 @@ const Details = () => {
       paymentObject.open();
     } catch (error) {
       console.error(error);
-      showToast("Something went wrong with the payment", "error");
+      const errorMessage = error.message || "Something went wrong with the payment";
+      showToast(errorMessage, "error");
     }
   };
 
