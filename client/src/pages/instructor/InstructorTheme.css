@@ -1,0 +1,236 @@
+.instructor-theme-page {
+  gap: 1.5rem;
+}
+
+.instructor-theme-page .student-header-banner,
+.instructor-theme-page .studio-hero {
+  background: linear-gradient(135deg, #2e2117 0%, #4a3728 100%);
+  border: 1px solid rgba(74, 55, 40, 0.35);
+  border-radius: 24px;
+  color: #fff;
+  box-shadow: 0 25px 50px -20px rgba(46, 33, 23, 0.45);
+}
+
+.instructor-theme-page .student-header-label,
+.instructor-theme-page .studio-kicker {
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.instructor-theme-page .page-title,
+.instructor-theme-page .studio-subtitle,
+.instructor-theme-page .studio-hero p {
+  color: #fff;
+}
+
+.instructor-header-actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.instructor-theme-page .btn-primary {
+  background: #6b4a32;
+}
+
+.instructor-theme-page .btn-primary:hover {
+  background: #5c3f2b;
+}
+
+.instructor-theme-page .btn-soft {
+  background: #f8efe8;
+  color: #5c3f2b;
+}
+
+.instructor-theme-page .btn-soft:hover {
+  background: #f2e2d6;
+}
+
+.instructor-theme-page .stat-card,
+.instructor-theme-page .table-shell,
+.instructor-theme-page .studio-sidebar,
+.instructor-theme-page .studio-panel,
+.instructor-theme-page .studio-module-card,
+.instructor-theme-page .studio-course-card {
+  border-radius: 20px;
+  border-color: #eadfd4;
+  box-shadow: 0 12px 28px -20px rgba(46, 33, 23, 0.45);
+}
+
+.instructor-theme-page .stat-icon,
+.instructor-theme-page .instructor-stat-icon {
+  background: #f8efe8;
+  color: #6b4a32;
+}
+
+.instructor-theme-page .status-chip.warning {
+  background: #fff4db;
+  color: #a45d00;
+}
+
+.instructor-theme-page .status-chip.success {
+  background: #e8f6ef;
+  color: #0f7a46;
+}
+
+.instructor-theme-page .status-chip.neutral {
+  background: #f5ece8;
+  color: #7b4d37;
+}
+
+.instructor-theme-page .studio-course-card.active {
+  border-color: #6b4a32;
+  background: #fcf6f1;
+}
+
+.instructor-theme-page .studio-price-chip,
+.instructor-theme-page .studio-badge {
+  background: #f4e5d8;
+  color: #5c3f2b;
+}
+
+.instructor-theme-page .studio-linkish {
+  color: #6b4a32;
+}
+
+.instructor-theme-page .studio-field input:focus,
+.instructor-theme-page .studio-field select:focus,
+.instructor-theme-page .studio-field textarea:focus {
+  border-color: #6b4a32;
+  box-shadow: 0 0 0 3px rgba(107, 74, 50, 0.2);
+}
+
+@media (max-width: 768px) {
+  .instructor-theme-page .student-header-banner,
+  .instructor-theme-page .studio-hero {
+    padding: 1.5rem;
+  }
+}
+
+.instructor-list-item {
+  border: 1px solid #eadfd4;
+  background: #fffaf6;
+}
+
+.instructor-earnings-grid {
+  display: grid;
+  grid-template-columns: minmax(240px, 1fr) minmax(320px, 2fr);
+  gap: 1rem;
+}
+
+.earnings-total {
+  margin: 0.3rem 0;
+  color: #2e2117;
+  font-family: 'Georgia', serif;
+  font-size: 2rem;
+}
+
+.earnings-growth {
+  margin: 0;
+  color: #0f7a46;
+  font-weight: 600;
+}
+
+.earnings-highlight {
+  background: linear-gradient(120deg, #6b4a32 0%, #8b6346 100%);
+  color: #fff;
+  border-radius: 14px;
+}
+
+.earnings-highlight h3 {
+  margin-top: 0;
+}
+
+.earnings-highlight p {
+  color: rgba(255, 255, 255, 0.86);
+}
+
+.earnings-highlight .btn-soft {
+  background: #f6e7db;
+  color: #5c3f2b;
+}
+
+.earnings-chart-wrap {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(48px, 1fr));
+  gap: 0.8rem;
+  min-height: 260px;
+  align-items: end;
+}
+
+.earnings-bar-col {
+  display: grid;
+  justify-items: center;
+  gap: 0.45rem;
+}
+
+.earnings-bar-track {
+  width: 100%;
+  max-width: 52px;
+  height: 200px;
+  background: #f1e7de;
+  border-radius: 10px;
+  display: flex;
+  align-items: flex-end;
+  padding: 4px;
+}
+
+.earnings-bar {
+  width: 100%;
+  border-radius: 8px;
+  background: linear-gradient(180deg, #b99a82 0%, #6b4a32 100%);
+}
+
+.earnings-bar-col span {
+  font-size: 0.8rem;
+  color: #7d6a5b;
+  font-weight: 600;
+}
+
+.earnings-course-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.9rem;
+}
+
+.earnings-course-card {
+  border: 1px solid #eadfd4;
+  border-radius: 12px;
+  padding: 0.85rem;
+  background: #fffaf6;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.earnings-course-card h4 {
+  margin: 0 0 0.25rem;
+  color: #2e2117;
+}
+
+.earnings-course-card p {
+  margin: 0;
+  color: #7d6a5b;
+  font-size: 0.85rem;
+}
+
+.earnings-course-meta {
+  text-align: right;
+}
+
+.earnings-course-meta strong {
+  display: block;
+  margin-bottom: 0.3rem;
+  color: #2e2117;
+}
+
+@media (max-width: 1024px) {
+  .instructor-earnings-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .earnings-course-grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -29,6 +29,8 @@ import Wishlist from './pages/student/Wishlist.jsx';
 // Instructor Pages
 import InstructorDash from './pages/instructor/Dashboard.jsx';
 import CreateCourse from './pages/instructor/Create.jsx';
+import InstructorAssignments from './pages/instructor/Assignments.jsx';
+import InstructorEarnings from './pages/instructor/Earnings.jsx';
 
 // Admin Pages
 import AdminDash from './pages/admin/Dashboard.jsx';
@@ -71,7 +73,6 @@ function App() {
 
   const dashboardPrefixes = ['/my-learning', '/player/', '/history', '/instructor', '/admin', '/student'];
   const showSidebar = dashboardPrefixes.some((prefix) => pathname.startsWith(prefix));
-  const authPaths = ['/verify-otp', '/forgot-password', '/reset'];
 
   return (
     <div className="app-shell">
@@ -97,7 +98,7 @@ function App() {
               {/* --- PUBLIC ROUTES --- */}
               <Route
                 path="/"
-                element={user ? <Navigate to={getDashboardRoute(user.role)} replace /> : <Home />}
+                element={user ? <Navigate to={getDashboardRoute(String(user?.role || '').toLowerCase())} replace /> : <Home />}
               />
               <Route path="/browse" element={<Browse />} />
               <Route path="/course/:id" element={<Details />} />
@@ -191,6 +192,22 @@ function App() {
                 element={
                   <RoleGate role="instructor">
                     <CreateCourse />
+                  </RoleGate>
+                }
+              />
+              <Route
+                path="/instructor/assignments"
+                element={
+                  <RoleGate role="instructor">
+                    <InstructorAssignments />
+                  </RoleGate>
+                }
+              />
+              <Route
+                path="/instructor/earnings"
+                element={
+                  <RoleGate role="instructor">
+                    <InstructorEarnings />
                   </RoleGate>
                 }
               />

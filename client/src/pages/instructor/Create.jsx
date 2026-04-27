@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   FiBookOpen,
+  FiCheckCircle,
   FiClock,
   FiEdit3,
   FiGrid,
@@ -13,11 +14,13 @@ import {
   FiTag,
   FiTrash2,
   FiUpload,
+  FiXCircle,
   FiVideo,
   FiYoutube,
 } from 'react-icons/fi';
 import { apiRequest } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
+import './InstructorTheme.css';
 
 const defaultCourseForm = {
   title: '',
@@ -64,6 +67,14 @@ const normalizeCourses = (items = []) =>
 const sumTopics = (modules = []) =>
   modules.reduce((total, module) => total + (module.topics || []).length, 0);
 
+const statusMeta = {
+  pending: { label: 'Pending approval', className: 'warning' },
+  approved: { label: 'Approved', className: 'success' },
+  rejected: { label: 'Rejected', className: 'neutral' },
+};
+
+const resolveStatus = (course) => course?.approvalStatus || 'approved';
+
 const Create = () => {
   const { showToast } = useToast();
   const [courses, setCourses] = useState([]);
@@ -85,12 +96,16 @@ const Create = () => {
   const courseStats = useMemo(() => {
     const totalModules = courses.reduce((count, course) => count + (course.modules || []).length, 0);
     const totalTopics = courses.reduce((count, course) => count + sumTopics(course.modules || []), 0);
+    const pendingCount = courses.filter((course) => course.approvalStatus === 'pending').length;
+    const approvedCount = courses.filter((course) => !course.approvalStatus || course.approvalStatus === 'approved').length;
 
     return {
       courses: courses.length,
       modules: totalModules,
       topics: totalTopics,
       selectedModules: selectedCourse ? selectedCourse.modules.length : 0,
+      pendingCount,
+      approvedCount,
     };
   }, [courses, selectedCourse]);
 
@@ -129,21 +144,11 @@ const Create = () => {
     }
   };
 
+  /* eslint-disable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
   useEffect(() => {
     loadCourses();
   }, []);
-
-  useEffect(() => {
-    if (selectedCourse) {
-      setCourseForm(courseToForm(selectedCourse));
-      setModuleForm(defaultModuleForm);
-      setTopicDrafts({});
-    } else {
-      setCourseForm(defaultCourseForm);
-      setModuleForm(defaultModuleForm);
-      setTopicDrafts({});
-    }
-  }, [selectedCourse]);
+  /* eslint-enable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
 
   const handleCourseField = (field, value) => {
     setCourseForm((previous) => ({ ...previous, [field]: value }));
@@ -221,6 +226,9 @@ const Create = () => {
 
   const handleSelectCourse = (course) => {
     setSelectedCourseId(course._id);
+    setCourseForm(courseToForm(course));
+    setModuleForm(defaultModuleForm);
+    setTopicDrafts({});
   };
 
   const handleModuleSubmit = async (event) => {
@@ -311,14 +319,16 @@ const Create = () => {
     'Other',
   ];
 
+  const selectedStatus = statusMeta[resolveStatus(selectedCourse)] || statusMeta.approved;
+
   return (
-    <section className="page-container studio-page">
+    <section className="page-container studio-page instructor-theme-page">
       <div className="page-header studio-hero">
         <div>
-          <span className="studio-kicker">Instructor course studio</span>
-          <h2 className="page-title">Build courses, modules, and topics</h2>
+          <span className="studio-kicker">ScholarHub instructor studio</span>
+          <h2 className="page-title">Create New Course</h2>
           <p className="studio-subtitle">
-            Create structured learning paths with YouTube links, hosted video URLs, notes, and module-level organization.
+            Design your course structure and submit it for admin approval before it goes live.
           </p>
         </div>
         <div className="studio-toolbar">
@@ -343,20 +353,20 @@ const Create = () => {
         </article>
         <article className="stat-card">
           <div className="stat-icon">
-            <FiLayers />
+            <FiClock />
           </div>
           <div className="stat-info">
-            <h3>{courseStats.modules}</h3>
-            <p>Modules created</p>
+            <h3>{courseStats.pendingCount}</h3>
+            <p>Pending approval</p>
           </div>
         </article>
         <article className="stat-card">
           <div className="stat-icon">
-            <FiVideo />
+            <FiCheckCircle />
           </div>
           <div className="stat-info">
-            <h3>{courseStats.topics}</h3>
-            <p>Topics published</p>
+            <h3>{courseStats.approvedCount}</h3>
+            <p>Approved courses</p>
           </div>
         </article>
       </div>
@@ -415,6 +425,11 @@ const Create = () => {
                           {Number(course.price || 0) === 0 ? 'Free' : `₹${course.price}`}
                         </span>
                       </div>
+                      <div>
+                        <span className={`status-chip ${statusMeta[resolveStatus(course)]?.className || 'success'}`}>
+                          {statusMeta[resolveStatus(course)]?.label || 'Approved'}
+                        </span>
+                      </div>
                       <div className="studio-course-meta">
                         <span>{moduleCount} modules</span>
                         <span>{topicCount} topics</span>
@@ -453,8 +468,8 @@ const Create = () => {
                   <span className="studio-section-label">Course details</span>
                   <h3>{selectedCourse ? `Edit ${selectedCourse.title}` : 'Create a new course'}</h3>
                 </div>
-                <span className="studio-badge">
-                  {selectedCourse ? 'Editing existing course' : 'Draft mode'}
+                <span className={`status-chip ${selectedStatus.className}`}>
+                  {selectedCourse ? selectedStatus.label : 'Draft mode'}
                 </span>
               </div>
 
@@ -556,7 +571,11 @@ const Create = () => {
                 <div className="studio-inline-actions studio-span-2">
                   <button type="submit" className="btn btn-primary" disabled={savingCourse}>
                     {savingCourse ? <FiLoader className="spin" /> : <FiSave />}
-                    {selectedCourse ? 'Save Changes' : 'Create Course'}
+                    {selectedCourse
+                      ? resolveStatus(selectedCourse) === 'approved'
+                        ? 'Save & Resubmit'
+                        : 'Update Submission'
+                      : 'Submit For Approval'}
                   </button>
                   {selectedCourse && (
                     <button
@@ -566,6 +585,12 @@ const Create = () => {
                     >
                       <FiTrash2 /> Delete Course
                     </button>
+                  )}
+                  {resolveStatus(selectedCourse) === 'rejected' && (
+                    <span className="studio-hint" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
+                      <FiXCircle />
+                      {selectedCourse.approvalNote || 'Course was rejected. Update details and resubmit.'}
+                    </span>
                   )}
                 </div>
               </form>

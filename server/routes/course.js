@@ -19,7 +19,9 @@ const {
   updateTopic,
   deleteTopic,
   toggleWishlist,
-  getWishlist
+  getWishlist,
+  getPendingCourseApprovals,
+  reviewCourseApproval
 } = require("../controllers/courseController");
 const { verifyToken, authorizeRoles } = require("../middlewares/auth");
 
@@ -48,6 +50,10 @@ router.delete("/instructor/modules/:moduleId", ...requireInstructorAccess, delet
 router.post("/instructor/modules/:moduleId/topics", ...requireInstructorAccess, addTopicToModule);
 router.put("/instructor/topics/:topicId", ...requireInstructorAccess, updateTopic);
 router.delete("/instructor/topics/:topicId", ...requireInstructorAccess, deleteTopic);
+
+// Admin course approval management
+router.get("/admin/pending", verifyToken, authorizeRoles("admin"), getPendingCourseApprovals);
+router.patch("/admin/:courseId/approval", verifyToken, authorizeRoles("admin"), reviewCourseApproval);
 
 router.get("/:courseId", getCourseDetails);
 

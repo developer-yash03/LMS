@@ -4,12 +4,13 @@ import { FiHome, FiShieldOff } from 'react-icons/fi';
 
 const RoleGate = ({ children, role }) => {
   const { user } = useAuth();
+  const normalizedRole = String(user?.role || '').toLowerCase();
 
   // If not logged in, go to login
   if (!user) return <Navigate to="/login" replace />;
 
   // If user's role doesn't match the required role, show an enterprise access panel
-  if (user.role !== role) {
+  if (normalizedRole !== role) {
     return (
       <section className="rolegate-wrap">
         <div className="rolegate-card shadow-soft-sm">

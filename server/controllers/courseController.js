@@ -5,6 +5,12 @@ const User = require("../models/User");
 const Progress = require("../models/Progress");
 const mongoose = require("mongoose");
 
+const COURSE_APPROVAL_STATUS = {
+  PENDING: "pending",
+  APPROVED: "approved",
+  REJECTED: "rejected"
+};
+
 const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
 const canManageCourse = (course, user) => {
   if (!course || !user) return false;
@@ -32,6 +38,35 @@ const parseNumericValue = (value, fallback = 0) => {
 
   const parsed = Number(value);
   return Number.isNaN(parsed) ? fallback : parsed;
+};
+
+const setCoursePendingReview = (course) => {
+  course.approvalStatus = COURSE_APPROVAL_STATUS.PENDING;
+  course.approvalNote = "";
+  course.approvedBy = null;
+  course.approvedAt = null;
+};
+
+const isCourseApproved = (course) => {
+  if (!course) return false;
+  return !course.approvalStatus || course.approvalStatus === COURSE_APPROVAL_STATUS.APPROVED;
+};
+
+const getCourseUpdatePatchForEditor = (user) => {
+  const updatedAt = new Date();
+  if (user?.role === "admin") {
+    return { $set: { updatedAt } };
+  }
+
+  return {
+    $set: {
+      updatedAt,
+      approvalStatus: COURSE_APPROVAL_STATUS.PENDING,
+      approvalNote: "",
+      approvedBy: null,
+      approvedAt: null
+    }
+  };
 };
 
 const pickCourseFields = (body = {}) => ({
@@ -73,7 +108,12 @@ exports.getAllCourses = async (req, res) => {
       sortOrder
     } = req.query;
 
-    let filter = {};
+    let filter = {
+      $or: [
+        { approvalStatus: COURSE_APPROVAL_STATUS.APPROVED },
+        { approvalStatus: { $exists: false } }
+      ]
+    };
 
     // Filter by category
     if (category) {
@@ -165,6 +205,10 @@ exports.getCourseDetails = async (req, res) => {
       return res.status(404).json({ success: false, message: "Course not found" });
     }
 
+    if (!isCourseApproved(course)) {
+      return res.status(404).json({ success: false, message: "Course not found" });
+    }
+
     res.status(200).json({
       success: true,
       data: course
@@ -187,6 +231,10 @@ exports.enrollCourse = async (req, res) => {
     const course = await Course.findById(courseId);
     if (!course) {
       return res.status(404).json({ success: false, message: "Course not found" });
+    }
+
+    if (!isCourseApproved(course)) {
+      return res.status(400).json({ success: false, message: "Course is not approved for enrollment yet" });
     }
 
     // Check if already enrolled
@@ -231,7 +279,15 @@ exports.getEnrolledCourses = async (req, res) => {
   try {
     const userId = req.user._id;
 
-    const user = await User.findById(userId).populate("enrolledCourses");
+    const user = await User.findById(userId).populate({
+      path: "enrolledCourses",
+      match: {
+        $or: [
+          { approvalStatus: COURSE_APPROVAL_STATUS.APPROVED },
+          { approvalStatus: { $exists: false } }
+        ]
+      }
+    });
 
     if (!user) {
       return res.status(404).json({ success: false, message: "User not found" });
@@ -267,6 +323,10 @@ exports.getCourseContent = async (req, res) => {
 
     // Check if student is enrolled
     const course = await Course.findById(courseId).populate(coursePopulateOptions);
+
+    if (course && !isCourseApproved(course)) {
+      return res.status(403).json({ success: false, message: "Course is not available yet" });
+    }
 
     if (!course || !course.enrolledStudents.includes(userId)) {
       return res.status(403).json({ success: false, message: "Not enrolled in this course" });
@@ -358,7 +418,16 @@ exports.getCourseProgress = async (req, res) => {
 exports.getInstructorCourses = async (req, res) => {
   try {
     const isAdmin = req.user.role === "admin";
+    const statusFilter = req.query.status;
     const filter = isAdmin ? {} : { instructor: req.user._id };
+
+    if (statusFilter && [
+      COURSE_APPROVAL_STATUS.PENDING,
+      COURSE_APPROVAL_STATUS.APPROVED,
+      COURSE_APPROVAL_STATUS.REJECTED
+    ].includes(statusFilter)) {
+      filter.approvalStatus = statusFilter;
+    }
 
     const courses = await Course.find(filter)
       .populate("instructor", "name email")
@@ -385,6 +454,9 @@ exports.createCourse = async (req, res) => {
     const course = await Course.create({
       ...pickCourseFields(req.body),
       instructor: req.user._id,
+      approvalStatus: req.user.role === "admin" ? COURSE_APPROVAL_STATUS.APPROVED : COURSE_APPROVAL_STATUS.PENDING,
+      approvedBy: req.user.role === "admin" ? req.user._id : null,
+      approvedAt: req.user.role === "admin" ? new Date() : null,
       updatedAt: new Date()
     });
 
@@ -392,7 +464,7 @@ exports.createCourse = async (req, res) => {
 
     res.status(201).json({
       success: true,
-      message: "Course created successfully",
+      message: req.user.role === "admin" ? "Course created successfully" : "Course created and submitted for admin approval",
       data: populatedCourse
     });
   } catch (error) {
@@ -419,6 +491,11 @@ exports.updateCourse = async (req, res) => {
     }
 
     Object.assign(course, pickCourseFields(req.body));
+
+    if (req.user.role !== "admin") {
+      setCoursePendingReview(course);
+    }
+
     course.updatedAt = new Date();
     await course.save();
 
@@ -495,6 +572,11 @@ exports.addModuleToCourse = async (req, res) => {
     });
 
     course.modules.push(module._id);
+
+    if (req.user.role !== "admin") {
+      setCoursePendingReview(course);
+    }
+
     course.updatedAt = new Date();
     await course.save();
 
@@ -535,6 +617,13 @@ exports.updateModule = async (req, res) => {
 
     await module.save();
 
+    if (req.user.role !== "admin") {
+      setCoursePendingReview(module.course);
+    }
+
+    module.course.updatedAt = new Date();
+    await module.course.save();
+
     const populatedCourse = await getPopulatedCourse(module.course._id);
 
     res.status(200).json({
@@ -568,7 +657,10 @@ exports.deleteModule = async (req, res) => {
     await Topic.deleteMany({ module: module._id });
     await Course.updateOne(
       { _id: module.course._id },
-      { $pull: { modules: module._id }, $set: { updatedAt: new Date() } }
+      {
+        $pull: { modules: module._id },
+        ...getCourseUpdatePatchForEditor(req.user)
+      }
     );
     await Module.deleteOne({ _id: module._id });
 
@@ -620,6 +712,11 @@ exports.addTopicToModule = async (req, res) => {
 
     module.topics.push(topic._id);
     await module.save();
+
+    if (req.user.role !== "admin") {
+      setCoursePendingReview(module.course);
+    }
+
     module.course.updatedAt = new Date();
     await module.course.save();
 
@@ -667,6 +764,13 @@ exports.updateTopic = async (req, res) => {
 
     await topic.save();
 
+    if (req.user.role !== "admin") {
+      setCoursePendingReview(topic.module.course);
+    }
+
+    topic.module.course.updatedAt = new Date();
+    await topic.module.course.save();
+
     const populatedCourse = await getPopulatedCourse(topic.module.course._id);
 
     res.status(200).json({
@@ -702,7 +806,10 @@ exports.deleteTopic = async (req, res) => {
 
     await Module.updateOne({ _id: topic.module._id }, { $pull: { topics: topic._id } });
     await Topic.deleteOne({ _id: topic._id });
-    await Course.updateOne({ _id: topic.module.course._id }, { $set: { updatedAt: new Date() } });
+    await Course.updateOne(
+      { _id: topic.module.course._id },
+      getCourseUpdatePatchForEditor(req.user)
+    );
 
     const populatedCourse = await getPopulatedCourse(topic.module.course._id);
 
@@ -751,6 +858,65 @@ exports.getWishlist = async (req, res) => {
     res.status(200).json({
       success: true,
       data: user.wishlist || []
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+exports.getPendingCourseApprovals = async (req, res) => {
+  try {
+    const { status = COURSE_APPROVAL_STATUS.PENDING } = req.query;
+
+    if (![COURSE_APPROVAL_STATUS.PENDING, COURSE_APPROVAL_STATUS.APPROVED, COURSE_APPROVAL_STATUS.REJECTED].includes(status)) {
+      return res.status(400).json({ success: false, message: "Invalid approval status" });
+    }
+
+    const courses = await Course.find({ approvalStatus: status })
+      .populate("instructor", "name email")
+      .sort({ updatedAt: -1, createdAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      data: courses
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+exports.reviewCourseApproval = async (req, res) => {
+  try {
+    const { courseId } = req.params;
+    const { status, note = "" } = req.body;
+
+    if (!isValidObjectId(courseId)) {
+      return res.status(400).json({ success: false, message: "Invalid course ID" });
+    }
+
+    if (![COURSE_APPROVAL_STATUS.APPROVED, COURSE_APPROVAL_STATUS.REJECTED].includes(status)) {
+      return res.status(400).json({ success: false, message: "Status must be approved or rejected" });
+    }
+
+    const course = await Course.findById(courseId);
+
+    if (!course) {
+      return res.status(404).json({ success: false, message: "Course not found" });
+    }
+
+    course.approvalStatus = status;
+    course.approvalNote = String(note || "").trim();
+    course.approvedBy = req.user._id;
+    course.approvedAt = new Date();
+    course.updatedAt = new Date();
+    await course.save();
+
+    const populatedCourse = await getPopulatedCourse(course._id);
+
+    res.status(200).json({
+      success: true,
+      message: status === COURSE_APPROVAL_STATUS.APPROVED ? "Course approved successfully" : "Course rejected successfully",
+      data: populatedCourse
     });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
