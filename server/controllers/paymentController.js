@@ -80,13 +80,24 @@ exports.verifyPayment = async (req, res) => {
         { paymentId: razorpay_order_id },
         { paymentStatus: "completed" },
         { new: true }
-      );
+      ).populate("course");
       
       if(order) {
-        // Enroll user in course
-        await User.findByIdAndUpdate(order.user, {
-            $addToSet: { enrolledCourses: order.course }
-        });
+        const user = await User.findById(order.user);
+        if (user) {
+          // Enroll user in course
+          await User.findByIdAndUpdate(order.user, {
+              $addToSet: { enrolledCourses: order.course._id }
+          });
+
+          // Send Receipt Email
+          const { sendReceiptEmail } = require("../utils/emailService");
+          await sendReceiptEmail(user.email, user.name, {
+            courseName: order.course.title || 'Course Enrollment',
+            amount: order.amount,
+            paymentId: order.paymentId
+          });
+        }
       }
 
       return res.status(200).json({ message: "Payment verified successfully" });
@@ -96,5 +107,27 @@ exports.verifyPayment = async (req, res) => {
   } catch (error) {
     console.error("Verification Error:", error);
     res.status(500).json({ error: "Server error" });
+  }
+};
+
+exports.getPaymentHistory = async (req, res) => {
+  try {
+    const userId = req.user._id || req.user.id;
+    const orders = await Order.find({ user: userId, paymentStatus: 'completed' })
+      .populate('course', 'title')
+      .sort({ createdAt: -1 });
+
+    const formattedOrders = orders.map(order => ({
+      id: order.paymentId || order._id,
+      course: order.course ? order.course.title : 'Course Enrollment',
+      date: order.createdAt || new Date(),
+      price: `₹${order.amount}`,
+      status: 'Success'
+    }));
+
+    res.status(200).json({ success: true, data: formattedOrders });
+  } catch (error) {
+    console.error("Fetch Payment History Error:", error);
+    res.status(500).json({ success: false, error: "Failed to fetch payment history" });
   }
 };
