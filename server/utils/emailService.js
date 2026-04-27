@@ -67,6 +67,60 @@ const sendOtpEmail = async (email, otp, name = "Learner") => {
   }
 };
 
+const sendReceiptEmail = async (email, name, orderDetails) => {
+  try {
+    const mailer = getTransporter();
+
+    if (!mailer) {
+      console.error("Email service is not configured.");
+      return false;
+    }
+
+    await mailer.sendMail({
+      from: `"ScholarHub" <${process.env.EMAIL_USER}>`,
+      to: email,
+      subject: "Your ScholarHub Transaction Receipt",
+      html: `
+        <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;border:1px solid #e5e7eb;border-radius:8px;">
+          <div style="text-align:center; margin-bottom: 24px; padding: 20px; background-color: #fdf5e6; border-radius: 6px;">
+            <h1 style="font-family: 'Georgia', serif; color: #5d4037; margin: 0; font-size: 30px; letter-spacing: 1px;">ScholarHub</h1>
+          </div>
+          
+          <div>
+            <h2 style="color:#0f172a;">Transaction Receipt</h2>
+            <p>Hi ${name},</p>
+            <p>Thank you for your purchase! Here is the receipt for your transaction.</p>
+            
+            <table style="width:100%; border-collapse: collapse; margin-top: 20px; margin-bottom: 20px;">
+              <tr style="background-color: #f8fafc; border-bottom: 1px solid #e2e8f0;">
+                <th style="padding: 12px; text-align: left;">Description</th>
+                <th style="padding: 12px; text-align: right;">Amount</th>
+              </tr>
+              <tr>
+                <td style="padding: 12px; border-bottom: 1px solid #e2e8f0;">${orderDetails.courseName}</td>
+                <td style="padding: 12px; text-align: right; border-bottom: 1px solid #e2e8f0;">₹${orderDetails.amount}</td>
+              </tr>
+              <tr>
+                <td style="padding: 12px; font-weight: bold; text-align: right;">Total Paid</td>
+                <td style="padding: 12px; font-weight: bold; text-align: right;">₹${orderDetails.amount}</td>
+              </tr>
+            </table>
+
+            <p style="color:#64748b; font-size: 14px;">Transaction ID: ${orderDetails.paymentId}</p>
+            <p style="color:#64748b; font-size: 14px;">Date: ${new Date().toLocaleDateString()}</p>
+          </div>
+        </div>
+      `
+    });
+
+    return true;
+  } catch (error) {
+    console.error("Failed to send receipt email:", error.message);
+    return false;
+  }
+};
+
 module.exports = {
-  sendOtpEmail
+  sendOtpEmail,
+  sendReceiptEmail
 };
