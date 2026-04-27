@@ -1,8 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { FiBookOpen, FiDollarSign, FiLayers, FiPlus, FiRefreshCw, FiUsers } from 'react-icons/fi';
+import { FiBookOpen, FiCheckCircle, FiClock, FiDollarSign } from 'react-icons/fi';
 import { apiRequest } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
+import './InstructorTheme.css';
 
 const InstructorDash = () => {
   const { showToast } = useToast();
@@ -32,59 +33,59 @@ const InstructorDash = () => {
       0
     );
     const earnings = courses.reduce((total, course) => total + Number(course.price || 0), 0);
+    const pending = courses.filter((course) => course.approvalStatus === 'pending').length;
+    const approved = courses.filter((course) => !course.approvalStatus || course.approvalStatus === 'approved').length;
 
     return {
       courses: courses.length,
       modules: moduleCount,
       topics: topicCount,
       earnings,
+      pending,
+      approved,
     };
   }, [courses]);
 
   const stats = [
-    { label: 'Courses live', count: loading ? '...' : String(summary.courses), icon: FiBookOpen },
-    { label: 'Modules built', count: loading ? '...' : String(summary.modules), icon: FiLayers },
-    { label: 'Topics published', count: loading ? '...' : String(summary.topics), icon: FiUsers },
-    { label: 'Price total', count: loading ? '...' : `₹${summary.earnings}`, icon: FiDollarSign },
+    { label: 'Total Courses', count: loading ? '...' : String(summary.courses), icon: FiBookOpen },
+    { label: 'Pending Review', count: loading ? '...' : String(summary.pending), icon: FiClock },
+    { label: 'Approved', count: loading ? '...' : String(summary.approved), icon: FiCheckCircle },
+    { label: 'Catalog Value', count: loading ? '...' : `₹${summary.earnings}`, icon: FiDollarSign },
   ];
 
+  const getDisplayStatus = (course) => course.approvalStatus || 'approved';
+
   return (
-    <section className="page-container">
-      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-        <div>
-          <h2 className="page-title">Instructor Dashboard</h2>
-          <p>Monitor your catalog and jump straight into course editing.</p>
-        </div>
-        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-          <button className="btn btn-soft" onClick={() => window.location.reload()}>
-            <FiRefreshCw /> Refresh
-          </button>
-          <Link to="/instructor/courses" className="btn btn-primary">
-            <FiPlus /> Manage Courses
-          </Link>
+    <section className="page-container student-page instructor-theme-page">
+      <div className="student-header-banner instructor-header-banner">
+        <div className="student-header-content">
+          <span className="student-header-label">SCHOLARHUB INSTRUCTOR PORTAL</span>
+          <h1>Good day, Instructor</h1>
+          <p>Manage your courses, monitor approvals, and grow your ScholarHub catalog.</p>
         </div>
       </div>
 
-      <div className="stats-grid">
+      <div className="student-stats-row instructor-stats-row">
         {stats.map((item, index) => (
-          <article key={index} className="stat-card">
-            <div className="stat-icon">
+          <article key={index} className="student-stat-card">
+            <div className="student-stat-icon instructor-stat-icon">
               <item.icon />
             </div>
-            <div className="stat-info">
-              <h3>{item.count}</h3>
-              <p>{item.label}</p>
+            <div className="student-stat-info">
+              <span className="student-stat-value">{item.count}</span>
+              <span className="student-stat-label">{item.label}</span>
             </div>
           </article>
         ))}
       </div>
 
-      <div className="table-shell">
+      <div className="table-shell instructor-table-shell">
         <table className="table-ui">
           <thead>
             <tr>
               <th>Course</th>
               <th>Category</th>
+              <th>Status</th>
               <th>Modules</th>
               <th>Topics</th>
               <th>Actions</th>
@@ -105,6 +106,19 @@ const InstructorDash = () => {
                       </div>
                     </td>
                     <td>{course.category}</td>
+                    <td>
+                      <span
+                        className={`status-chip ${
+                          getDisplayStatus(course) === 'approved'
+                            ? 'success'
+                            : getDisplayStatus(course) === 'rejected'
+                              ? 'neutral'
+                              : 'warning'
+                        }`}
+                      >
+                        {getDisplayStatus(course)}
+                      </span>
+                    </td>
                     <td>{moduleCount}</td>
                     <td>{topicCount}</td>
                     <td>
@@ -117,7 +131,7 @@ const InstructorDash = () => {
               })
             ) : (
               <tr>
-                <td colSpan="5" style={{ textAlign: 'center', padding: '2rem' }}>
+                <td colSpan="6" style={{ textAlign: 'center', padding: '2rem' }}>
                   {loading ? 'Loading your courses...' : 'No courses yet. Create one to get started.'}
                 </td>
               </tr>

@@ -1,9 +1,11 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
-  FiBookOpen,
+  FiCheckSquare,
   FiClock,
   FiGrid,
+  FiDollarSign,
+  FiPlus,
   FiPlusSquare,
   FiShield,
   FiUsers,
@@ -23,6 +25,10 @@ const Sidebar = () => {
   // Guard: render nothing if user is not logged in
   if (!user) return null;
 
+  const normalizedRole = String(user?.role || 'student').toLowerCase();
+  const safeIdentity = String(user?.name || user?.email || 'User').trim();
+  const firstName = safeIdentity.split(' ')[0] || 'User';
+
   const handleLogout = () => {
     logout();
     showToast('Logged out successfully!', 'info');
@@ -36,8 +42,9 @@ const Sidebar = () => {
       { name: 'Wishlist', path: '/student/wishlist', icon: FiHeart },
     ],
     instructor: [
-      { name: 'Dashboard', path: '/instructor/dashboard', icon: FiGrid },
-      { name: 'Manage Courses', path: '/instructor/courses', icon: FiPlusSquare },
+      { name: 'My Courses', path: '/instructor/courses', icon: FiPlusSquare },
+      { name: 'Assignments', path: '/instructor/assignments', icon: FiCheckSquare },
+      { name: 'Earnings', path: '/instructor/earnings', icon: FiDollarSign },
     ],
     admin: [
       { name: 'Admin Dashboard', path: '/admin/dashboard', icon: FiShield },
@@ -51,25 +58,25 @@ const Sidebar = () => {
     admin: 'Admin DashBoard',
   };
 
-  const roleItems = menuItems[user.role] || [];
+  const roleItems = menuItems[normalizedRole] || [];
   const isActivePath = (path) => pathname === path || pathname.startsWith(path + '/');
 
   return (
-    <div className="sidebar-wrapper">
+    <div className={`sidebar-wrapper ${normalizedRole === 'instructor' ? 'sidebar-instructor' : ''}`}>
       {/* Role label */}
       <span className="sidebar-role">
-        {roleLabel[user.role] || `${user.role} Portal`}
+        {roleLabel[normalizedRole] || `${normalizedRole} Portal`}
       </span>
 
       {/* Greeting and Role avatar */}
       <div className="sidebar-user-info">
         <div className="sidebar-greeting">
           <p className="greeting-text">Hello,</p>
-          <h3 className="greeting-name">{user.name.split(' ')[0]}!</h3>
+          <h3 className="greeting-name">{firstName}!</h3>
         </div>
         <div className="avatar-wrapper">
           <img
-            src={`https://ui-avatars.com/api/?name=${encodeURIComponent(user.name || 'User')}&background=0056D2&color=fff&size=36&font-size=0.45&bold=true`}
+            src={`https://ui-avatars.com/api/?name=${encodeURIComponent(safeIdentity)}&background=0056D2&color=fff&size=36&font-size=0.45&bold=true`}
             alt="User"
             className="sidebar-avatar"
           />
@@ -93,6 +100,15 @@ const Sidebar = () => {
 
       {/* Logout button */}
       <div className="sidebar-footer">
+        {normalizedRole === 'instructor' && (
+          <Link
+            to="/instructor/create"
+            className={`sidebar-create-btn ${isActivePath('/instructor/create') || isActivePath('/instructor/courses') ? 'active' : ''}`}
+          >
+            <FiPlus size={18} />
+            Create New Course
+          </Link>
+        )}
         <button onClick={handleLogout} className="sidebar-logout-btn">
           <FiLogOut size={18} />
           Logout

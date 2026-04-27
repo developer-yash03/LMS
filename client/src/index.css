@@ -162,9 +162,11 @@ p { margin-top: 0; margin-bottom: 1rem; color: var(--text-muted); }
   min-width: 260px;
   position: sticky;
   top: 0;
-  height: 100vh;
+  align-self:normal;
+  height: calc(100vh - 60px);
+  min-height: 100%;
   overflow-y: auto;
-  padding: 16px 12px;
+  padding: 0;
   border-right: 1px solid var(--border-color);
   background: var(--bg-surface);
   flex-shrink: 0;
@@ -348,9 +350,10 @@ p { margin-top: 0; margin-bottom: 1rem; color: var(--text-muted); }
   flex-direction: column;
   gap: 4px;
   background: var(--bg-surface);
-  border-radius: 12px;
-  border: 1px solid var(--border-color);
+  border-radius: 0;
+  border: none;
   padding: 16px;
+  min-height: 100%;
 }
 .sidebar-wrapper .sidebar-role {
   font-size: 0.65rem;
@@ -433,6 +436,57 @@ p { margin-top: 0; margin-bottom: 1rem; color: var(--text-muted); }
   padding-top: 1rem;
 }
 
+.sidebar-create-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  text-decoration: none;
+  background: #5f402d;
+  color: #fff;
+  border: 1px solid #5f402d;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  margin-bottom: 0.6rem;
+  transition: all 0.2s ease;
+}
+
+.sidebar-create-btn:hover {
+  background: #4e3324;
+  border-color: #4e3324;
+}
+
+.sidebar-create-btn.active {
+  box-shadow: 0 0 0 2px rgba(95, 64, 45, 0.24);
+}
+
+.sidebar-instructor {
+  background: linear-gradient(180deg, #f7efe8 0%, #f4e8dd 100%);
+  border-color: #e4d3c4;
+}
+
+.sidebar-instructor .sidebar-role {
+  color: #5f402d;
+  border-bottom-color: #e4d3c4;
+}
+
+.sidebar-instructor .sidebar-user-info {
+  border-bottom-color: #e4d3c4;
+}
+
+.sidebar-instructor .sidebar-link:hover {
+  background: #efdfd1;
+  color: #5f402d;
+}
+
+.sidebar-instructor .sidebar-link.active {
+  background: #e8d3c1;
+  color: #5f402d;
+  border-left-color: #5f402d;
+}
+
 .sidebar-logout-btn {
   display: flex;
   align-items: center;
@@ -453,6 +507,15 @@ p { margin-top: 0; margin-bottom: 1rem; color: var(--text-muted); }
 .sidebar-logout-btn:hover {
   background: #fef2f2;
   border-color: #fecaca;
+}
+
+.sidebar-instructor .sidebar-logout-btn {
+  color: #6f4a34;
+}
+
+.sidebar-instructor .sidebar-logout-btn:hover {
+  background: #f4e2d6;
+  border-color: #d7b9a2;
 }
 
 /* Course Card */

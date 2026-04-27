@@ -44,6 +44,24 @@ const courseSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
+  approvalStatus: {
+    type: String,
+    enum: ["pending", "approved", "rejected"],
+    default: "pending"
+  },
+  approvalNote: {
+    type: String,
+    default: ""
+  },
+  approvedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    default: null
+  },
+  approvedAt: {
+    type: Date,
+    default: null
+  },
   createdAt: {
     type: Date,
     default: Date.now
