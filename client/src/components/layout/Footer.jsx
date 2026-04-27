@@ -8,16 +8,17 @@ const Footer = () => (
     width: '100%',
     display: 'flex',
     flexDirection: 'column',
-    justifyContent: 'flex-end',
-    alignItems: 'flex-start',
-    minHeight: 'auto'
+    justifyContent: 'center',
+    alignItems: 'center',
+    textAlign: 'center',
+    marginTop: 'auto'
   }}>
     <div style={{ width: '100%' }}>
       <h3 style={{ 
         fontFamily: "'Georgia', serif", 
         fontSize: '1.2rem', 
         color: '#2e2117', 
-        margin: '0 0 0.2rem 0',
+        margin: '0 0 0.5rem 0',
         lineHeight: '1'
       }}>
         ScholarHub

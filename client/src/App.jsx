@@ -212,9 +212,9 @@ function App() {
               <Route path="*" element={<NotFound />} />
             </Routes>
           </div>
-          <Footer />
         </main>
       </div>
+      <Footer />
     </div>
   );
 }
