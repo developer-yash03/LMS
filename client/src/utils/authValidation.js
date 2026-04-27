@@ -19,7 +19,7 @@ export const inferRoleFromEmail = (email = '') => {
 export const dashboardRouteByRole = {
   admin: '/admin/dashboard',
   instructor: '/instructor/dashboard',
-  student: '/student/dashboard',
+  student: '/my-learning',
 };
 
 export const getDashboardRoute = (role = 'student') => {

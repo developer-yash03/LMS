@@ -2,7 +2,7 @@ import React from 'react';
 
 const Footer = () => (
   <footer className="footer" style={{ 
-    padding: '1rem 1.5rem', 
+    padding: '0.8rem 1.5rem 0.2rem 1.5rem', 
     backgroundColor: '#fffaf5', 
     borderTop: '1px solid #e5e7eb',
     width: '100%',
@@ -11,25 +11,25 @@ const Footer = () => (
     justifyContent: 'center',
     alignItems: 'center',
     textAlign: 'center',
-    marginTop: 'auto'
+    marginTop: 'auto',
   }}>
     <div style={{ width: '100%' }}>
       <h3 style={{ 
         fontFamily: "'Georgia', serif", 
-        fontSize: '1.2rem', 
+        fontSize: '1rem', 
         color: '#2e2117', 
         margin: '0 0 0.5rem 0',
-        lineHeight: '1'
+        lineHeight: '0.1'
       }}>
         ScholarHub
       </h3>
       <p style={{ 
-        fontSize: '0.65rem', 
+        fontSize: '0.6rem', 
         color: '#9ca3af', 
         textTransform: 'uppercase', 
         letterSpacing: '1px',
         margin: 0,
-        lineHeight: '1'
+        lineHeight: '0.1'
       }}>
         © {new Date().getFullYear()} SCHOLARHUB ACADEMY. ALL RIGHTS RESERVED.
       </p>

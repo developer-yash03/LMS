@@ -19,6 +19,9 @@ const userSchema = new mongoose.Schema({
   enrolledCourses: [
     { type: mongoose.Schema.Types.ObjectId, ref: "Course" }
   ],
+  wishlist: [
+    { type: mongoose.Schema.Types.ObjectId, ref: "Course" }
+  ],
   otp: String,
   otpExpiry: Date,
   otpCooldown: Date,

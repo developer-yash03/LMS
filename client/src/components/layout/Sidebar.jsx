@@ -7,6 +7,7 @@ import {
   FiPlusSquare,
   FiShield,
   FiUsers,
+  FiHeart
 } from 'react-icons/fi';
 import { useAuth } from '../../hooks/useAuth';
 
@@ -19,10 +20,9 @@ const Sidebar = () => {
 
   const menuItems = {
     student: [
-      { name: 'Dashboard', path: '/student/dashboard', icon: FiGrid },
-      { name: 'My Courses', path: '/student/courses', icon: FiBookOpen },
       { name: 'My Learning', path: '/my-learning', icon: FiClock },
-      { name: 'History', path: '/history', icon: FiClock },
+      { name: 'Payment History', path: '/history', icon: FiClock },
+      { name: 'Wishlist', path: '/student/wishlist', icon: FiHeart },
     ],
     instructor: [
       { name: 'Dashboard', path: '/instructor/dashboard', icon: FiGrid },
@@ -35,9 +35,9 @@ const Sidebar = () => {
   };
 
   const roleLabel = {
-    student: 'Student Portal',
-    instructor: 'Instructor Portal',
-    admin: 'Admin Portal',
+    student: 'Student DashBoard',
+    instructor: 'Instructor DashBoard',
+    admin: 'Admin DashBoard',
   };
 
   const roleItems = menuItems[user.role] || [];
