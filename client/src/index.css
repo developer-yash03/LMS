@@ -190,7 +190,7 @@ p { margin-top: 0; margin-bottom: 1rem; color: var(--text-muted); }
    ═══════════════════════════════════════════ */
 .navbar-top {
   position: relative;
-  height: 80px;
+  height: 60px;
   background: #ffffff;
   z-index: 1000;
   display: flex;

@@ -34,10 +34,7 @@ const Navbar = () => {
           <ScholarHubLogo />
         </Link>
 
-        <div className={`navbar-main-links ${menuOpen ? 'active' : ''}`}>
-          <Link to="/browse" className="nav-link">Courses</Link>
-          <Link to="/instructors" className="nav-link">Instructors</Link>
-        </div>
+        {/* Main navigation links removed */}
 
         <div className="navbar-right">
           {user ? (

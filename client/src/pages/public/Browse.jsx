@@ -1,12 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { FiSearch, FiGrid, FiBook, FiClock, FiStar, FiUsers } from 'react-icons/fi';
+import { FiSearch, FiGrid, FiBook, FiClock, FiStar, FiUsers, FiHeart } from 'react-icons/fi';
 import { useSearchParams, Link } from 'react-router-dom';
 import { apiRequest } from '../../services/api';
+import { useAuth } from '../../hooks/useAuth';
+import { useToast } from '../../context/ToastContext';
 import './Browse.css';
 
 const Browse = () => {
+  const { user } = useAuth();
+  const { showToast } = useToast();
   const [searchParams] = useSearchParams();
   const [courses, setCourses] = useState([]);
+  const [wishlist, setWishlist] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -18,6 +23,41 @@ const Browse = () => {
   const [page, setPage] = useState(1);
   const [limit] = useState(6);
   const [pagination, setPagination] = useState({ page: 1, pages: 1, total: 0 });
+
+  useEffect(() => {
+    const fetchWishlist = async () => {
+      if (user && user.role === 'student') {
+        try {
+          const res = await apiRequest('/courses/student/wishlist');
+          if (res.success) {
+            setWishlist(res.data.map(c => c._id));
+          }
+        } catch (error) {
+          console.error("Failed to fetch wishlist");
+        }
+      }
+    };
+    fetchWishlist();
+  }, [user]);
+
+  const handleWishlistToggle = async (e, courseId) => {
+    e.preventDefault();
+    e.stopPropagation();
+    try {
+      const res = await apiRequest(`/courses/${courseId}/wishlist`, 'POST');
+      if (res.success) {
+        if (res.inWishlist) {
+          setWishlist([...wishlist, courseId]);
+          showToast('Added to wishlist', 'success');
+        } else {
+          setWishlist(wishlist.filter(id => id !== courseId));
+          showToast('Removed from wishlist', 'info');
+        }
+      }
+    } catch (error) {
+      showToast(error.message || 'Action failed', 'error');
+    }
+  };
 
   const categoryOptions = [
     'All',
@@ -183,36 +223,64 @@ const Browse = () => {
         </div>
       ) : courses.length > 0 ? (
         <div className="browse-grid">
-          {courses.map((course) => (
-            <Link key={course.id} to={`/course/${course.id}`} className="browse-card">
-              <div className="browse-card-image">
-                <img
-                  src={course.thumbnail || `https://picsum.photos/seed/${course.id}/800/450`}
-                  alt={course.title}
-                />
-              </div>
-              <div className="browse-card-body">
-                <span className="browse-card-tag">{course.category || 'Course'}</span>
-                <h3 className="browse-card-title">{course.title}</h3>
-                <p className="browse-card-instructor">
-                  <FiUsers size={14} /> {course.instructor || 'Instructor'}
-                </p>
-                {course.rating && (
-                  <p className="browse-card-rating">
-                    <FiStar fill="#b4690e" color="#b4690e" /> {course.rating} <span>({course.reviewCount || 0} reviews)</span>
-                  </p>
+          {courses.map((course) => {
+            const isWishlisted = wishlist.includes(course.id);
+            return (
+              <div key={course.id} className="browse-card" style={{ position: 'relative' }}>
+                <Link to={`/course/${course.id}`} style={{ display: 'block', textDecoration: 'none', color: 'inherit' }}>
+                  <div className="browse-card-image">
+                    <img
+                      src={course.thumbnail || `https://picsum.photos/seed/${course.id}/800/450`}
+                      alt={course.title}
+                    />
+                  </div>
+                  <div className="browse-card-body">
+                    <span className="browse-card-tag">{course.category || 'Course'}</span>
+                    <h3 className="browse-card-title">{course.title}</h3>
+                    <p className="browse-card-instructor">
+                      <FiUsers size={14} /> {course.instructor || 'Instructor'}
+                    </p>
+                    {course.rating && (
+                      <p className="browse-card-rating">
+                        <FiStar fill="#b4690e" color="#b4690e" /> {course.rating} <span>({course.reviewCount || 0} reviews)</span>
+                      </p>
+                    )}
+                    <div className="browse-card-footer">
+                      {course.price === 0 || course.price === '0' ? (
+                        <span className="browse-card-price free">Free</span>
+                      ) : (
+                        <span className="browse-card-price">₹{course.price}</span>
+                      )}
+                      <span className="browse-card-level">{course.level || 'Beginner'}</span>
+                    </div>
+                  </div>
+                </Link>
+                {user && user.role === 'student' && (
+                  <button
+                    onClick={(e) => handleWishlistToggle(e, course.id)}
+                    style={{
+                      position: 'absolute',
+                      top: '10px',
+                      right: '10px',
+                      background: 'rgba(255, 255, 255, 0.9)',
+                      border: 'none',
+                      borderRadius: '50%',
+                      width: '36px',
+                      height: '36px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                      boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                      zIndex: 10
+                    }}
+                  >
+                    <FiHeart size={18} fill={isWishlisted ? "#ef4444" : "none"} color={isWishlisted ? "#ef4444" : "#4b5563"} />
+                  </button>
                 )}
-                <div className="browse-card-footer">
-                  {course.price === 0 || course.price === '0' ? (
-                    <span className="browse-card-price free">Free</span>
-                  ) : (
-                    <span className="browse-card-price">${course.price}</span>
-                  )}
-                  <span className="browse-card-level">{course.level || 'Beginner'}</span>
-                </div>
               </div>
-            </Link>
-          ))}
+            );
+          })}
         </div>
       ) : (
         <div className="browse-empty">

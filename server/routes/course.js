@@ -17,7 +17,9 @@ const {
   deleteModule,
   addTopicToModule,
   updateTopic,
-  deleteTopic
+  deleteTopic,
+  toggleWishlist,
+  getWishlist
 } = require("../controllers/courseController");
 const { verifyToken, authorizeRoles } = require("../middlewares/auth");
 
@@ -29,6 +31,8 @@ router.get("/browse", getAllCourses);
 // Protected student routes 
 router.post("/:courseId/enroll", verifyToken, enrollCourse);
 router.get("/student/enrolled-courses", verifyToken, getEnrolledCourses);
+router.get("/student/wishlist", verifyToken, getWishlist);
+router.post("/:id/wishlist", verifyToken, toggleWishlist);
 router.get("/:courseId/content", verifyToken, getCourseContent);
 router.get("/:courseId/progress", verifyToken, getCourseProgress);
 router.post("/:courseId/topic/:topicId/complete", verifyToken, markTopicComplete);
