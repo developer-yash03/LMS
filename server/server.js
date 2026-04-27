@@ -17,22 +17,43 @@ app.use((req, res, next) => {
   next();
 });
 
+// Serverless-optimized connection caching
+let isConnected = false;
+
 const connectDB = async () => {
+  if (isConnected) {
+    console.log("Using existing MongoDB connection");
+    return;
+  }
+
   try {
     if (!process.env.MONGO_URI) {
       throw new Error("MONGO_URI not found in .env");
     }
 
     const conn = await mongoose.connect(process.env.MONGO_URI, {
-      serverSelectionTimeoutMS: 10000,
+      serverSelectionTimeoutMS: 5000, // Reduced for faster fail in serverless
+      maxPoolSize: 10, // Serverless best practice
     });
 
+    isConnected = conn.connections[0].readyState === 1;
     console.log(`MongoDB Connected: ${conn.connection.host}`);
   } catch (error) {
     console.error("MongoDB connection failed:", error.message);
-    process.exit(1);
+    // Don't process.exit in serverless! Just throw error.
+    throw error;
   }
 };
+
+// Ensure DB is connected for every request in serverless environments
+app.use(async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (error) {
+    res.status(500).json({ success: false, message: "Database connection failed" });
+  }
+});
 
 // Routes
 app.use("/api/signup", require("./routes/signup")); // FIRST
@@ -42,15 +63,20 @@ app.use("/api/payment", require("./routes/paymentRoutes"));
 app.use("/api/courses", require("./routes/course"));
 app.use("/api", require("./routes/test")); // LAST
 
-// Start server ONLY after DB connects
+// Start server locally OR export for Vercel Serverless Functions
 const PORT = process.env.PORT || 5000;
 
-const startServer = async () => {
-  await connectDB();
-
-  app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+if (require.main === module) {
+  // Local development
+  connectDB().then(() => {
+    app.listen(PORT, () => {
+      console.log(`Server running on port ${PORT}`);
+    });
+  }).catch(err => {
+    console.error("Failed to start server locally:", err);
+    process.exit(1);
   });
-};
+}
 
-startServer();
+// Export for Vercel Serverless Functions
+module.exports = app;
