@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const { login, getMe, sendOtp, verifyOtp } = require("../controllers/authController");
+const { login, getMe, sendOtp, verifyOtp, resetPassword } = require("../controllers/authController");
 const { verifyToken, authorizeRoles } = require("../middlewares/auth");
 
 router.post("/login", login);
@@ -25,5 +25,6 @@ router.get("/analytics", verifyToken, authorizeRoles("admin"), (req, res) => {
 
 router.post("/send-otp", sendOtp);
 router.post("/verify-otp", verifyOtp);
+router.post("/reset-password", resetPassword);
 
 module.exports = router;

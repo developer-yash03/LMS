@@ -81,14 +81,21 @@ const ForgotPassword = () => {
     }
   };
 
-  const handleResetPassword = (event) => {
+  const handleResetPassword = async (event) => {
     event.preventDefault();
     if (!canReset) return;
     setLoading(true);
-    setTimeout(() => {
+    try {
+      await apiRequest('/auth/reset-password', 'POST', {
+        email: trimmedEmail,
+        newPassword: newPassword
+      });
       setLoading(false);
       setSuccessMessage('Password reset successful. You can now sign in.');
-    }, 1100);
+    } catch (error) {
+      setLoading(false);
+      showToast(error.message || 'Password reset failed', 'error');
+    }
   };
 
   return (
