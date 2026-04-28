@@ -4,6 +4,7 @@ const Topic = require("../models/Topic");
 const User = require("../models/User");
 const Progress = require("../models/Progress");
 const Submission = require("../models/Submission");
+const Quiz = require("../models/Quiz");
 const mongoose = require("mongoose");
 
 const COURSE_APPROVAL_STATUS = {
@@ -377,29 +378,32 @@ exports.getCourseContent = async (req, res) => {
     // Get student progress
     const progress = await Progress.findOne({ user: userId, course: courseId });
 
-    // Fetch quizzes for these topics (Admins/Instructors can also see pending)
+    // Collect all topic IDs to fetch their quizzes
     const topicIds = [];
     course.modules.forEach(mod => {
-      (mod.topics || []).forEach(t => topicIds.push(t._id));
+      (mod.topics || []).forEach(topic => {
+        topicIds.push(topic._id);
+      });
     });
 
+    // Fetch approved quizzes for these topics (Admins/Instructors can also see pending)
     const quizFilter = { topic: { $in: topicIds } };
     if (!isAdmin && !isInstructor) {
       quizFilter.status = "approved";
     } else {
+      // For admins/instructors, show both pending and approved
       quizFilter.status = { $in: ["approved", "pending"] };
     }
 
-    const Quiz = require("../models/Quiz");
     const quizzes = await Quiz.find(quizFilter).lean();
-    
+
     // Create a map of topicId -> quiz
     const quizMap = {};
-    quizzes.forEach(q => {
-      quizMap[String(q.topic)] = q;
+    quizzes.forEach(quiz => {
+      quizMap[String(quiz.topic)] = quiz;
     });
 
-    // Attach quizzes to topics
+    // Attach quizzes to topics in the course structure
     const courseObj = course.toObject();
     courseObj.modules.forEach(mod => {
       (mod.topics || []).forEach(topic => {
@@ -488,13 +492,19 @@ exports.getCourseProgress = async (req, res) => {
     const progress = await Progress.findOne({ user: userId, course: courseId }).populate("completedTopics");
 
     if (!progress) {
-      // For Admins and the course's Instructor, return a default empty progress 
-      // instead of 404 so they can still use the player.
+      // For Admins, the course's Instructor, or Enrolled Students:
+      // Return a default empty progress instead of 404 so the player works.
       const isAdmin = req.user.role === "admin";
       const course = await Course.findById(courseId);
-      const isInstructor = course && String(course.instructor?._id || course.instructor) === String(userId);
+      
+      if (!course) {
+        return res.status(404).json({ success: false, message: "Course not found" });
+      }
 
-      if (isAdmin || isInstructor) {
+      const isInstructor = String(course.instructor?._id || course.instructor) === String(userId);
+      const isEnrolled = course.enrolledStudents.some(id => String(id) === String(userId));
+
+      if (isAdmin || isInstructor || isEnrolled) {
         return res.status(200).json({
           success: true,
           data: {
@@ -507,6 +517,29 @@ exports.getCourseProgress = async (req, res) => {
       }
 
       return res.status(404).json({ success: false, message: "No progress found" });
+    }
+
+    // Recalculate progress percentage dynamically to handle course updates
+    const course = await Course.findById(courseId).populate({
+      path: 'modules',
+      populate: { path: 'topics' }
+    });
+    
+    if (course) {
+      let totalTopics = 0;
+      (course.modules || []).forEach(module => {
+        totalTopics += (module.topics || []).length;
+      });
+
+      const actualPercentage = totalTopics > 0 
+        ? Math.round((progress.completedTopics.length / totalTopics) * 100) 
+        : 0;
+
+      // Update the object in memory (and save back to DB if it changed)
+      if (progress.progressPercentage !== actualPercentage) {
+        progress.progressPercentage = actualPercentage;
+        await progress.save();
+      }
     }
 
     res.status(200).json({
@@ -1067,6 +1100,62 @@ exports.reviewCourseApproval = async (req, res) => {
       message: status === COURSE_APPROVAL_STATUS.APPROVED ? "Course approved successfully" : "Course rejected successfully",
       data: populatedCourse
     });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+// Get all submissions for a course (for instructors)
+exports.getCourseSubmissions = async (req, res) => {
+  try {
+    const { courseId } = req.params;
+    const instructorId = req.user._id;
+
+    const course = await Course.findById(courseId);
+    if (!course) return res.status(404).json({ success: false, message: "Course not found" });
+
+    // Security: Only course instructor or admin can view all submissions
+    if (String(course.instructor) !== String(instructorId) && req.user.role !== "admin") {
+      return res.status(403).json({ success: false, message: "Not authorized" });
+    }
+
+    const submissions = await Submission.find({ course: courseId })
+      .populate("user", "name email")
+      .populate("topic", "title")
+      .sort({ submittedAt: -1 });
+
+    res.status(200).json({ success: true, data: submissions });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+// Grade a submission
+exports.gradeSubmission = async (req, res) => {
+  try {
+    const { submissionId } = req.params;
+    const { grade, feedback } = req.body;
+    const instructorId = req.user._id;
+
+    if (grade < 0 || grade > 10) {
+      return res.status(400).json({ success: false, message: "Grade must be between 0 and 10" });
+    }
+
+    const submission = await Submission.findById(submissionId).populate("course");
+    if (!submission) return res.status(404).json({ success: false, message: "Submission not found" });
+
+    // Security: Only course instructor or admin can grade
+    if (String(submission.course.instructor) !== String(instructorId) && req.user.role !== "admin") {
+      return res.status(403).json({ success: false, message: "Not authorized" });
+    }
+
+    submission.grade = grade;
+    submission.feedback = feedback || "";
+    submission.status = "graded";
+    submission.gradedAt = Date.now();
+
+    await submission.save();
+
+    res.status(200).json({ success: true, message: "Assignment graded successfully", data: submission });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }

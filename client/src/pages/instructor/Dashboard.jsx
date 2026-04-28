@@ -62,6 +62,9 @@ const InstructorDash = () => {
           <span className="student-header-label">SCHOLARHUB INSTRUCTOR PORTAL</span>
           <h1>Good day, Instructor</h1>
           <p>Manage your courses, monitor approvals, and grow your ScholarHub catalog.</p>
+          <div style={{ marginTop: 12 }}>
+            <Link to="/instructor/quizzes" className="btn btn-primary">Create Quiz</Link>
+          </div>
         </div>
       </div>
 
@@ -122,9 +125,10 @@ const InstructorDash = () => {
                     <td>{moduleCount}</td>
                     <td>{topicCount}</td>
                     <td>
-                      <Link to="/instructor/courses" className="btn btn-soft btn-sm">
-                        Open editor
-                      </Link>
+                      <div style={{ display: 'flex', gap: 8 }}>
+                        <Link to="/instructor/courses" className="btn btn-soft btn-sm">Open editor</Link>
+                        <Link to={`/instructor/quizzes?course=${course._id}`} className="btn btn-outline btn-sm">Create Quiz</Link>
+                      </div>
                     </td>
                   </tr>
                 );
