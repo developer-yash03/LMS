@@ -8,11 +8,13 @@ import {
   FiDownload,
   FiUploadCloud,
   FiLoader,
+  FiHelpCircle,
 } from 'react-icons/fi';
 import { useParams } from 'react-router-dom';
 import { useToast } from '../../context/ToastContext';
 import BackButton from '../../components/common/BackButton';
 import Progressbar from '../../components/common/Progressbar';
+import QuizWidget from '../../components/course/QuizWidget';
 import { apiRequest, uploadMedia } from '../../services/api';
 
 const Player = () => {
@@ -28,6 +30,11 @@ const Player = () => {
   const [collapsedModules, setCollapsedModules] = useState({});
   const [submissionStatus, setSubmissionStatus] = useState(null);
   const [isUploadingAssignment, setIsUploadingAssignment] = useState(false);
+  const [showQuiz, setShowQuiz] = useState(false);
+
+  useEffect(() => {
+    setShowQuiz(false);
+  }, [activeTopic]);
 
   useEffect(() => {
     const fetchPlayerData = async () => {
@@ -39,6 +46,7 @@ const Player = () => {
         ]);
 
         const content = contentResponse?.data || {};
+        console.log('Player Data:', content);
         setCourse(content.course || null);
         setModules(content.modules || []);
 
@@ -275,9 +283,51 @@ const Player = () => {
                 </div>
               )}
 
+              {currentTopic.quiz && (
+                <div style={{ marginTop: '2rem', padding: '1.5rem', background: '#fffbeb', borderRadius: '8px', border: '1px solid #fde68a' }}>
+                  <h3 style={{ fontSize: '1.1rem', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#92400e' }}>
+                    <FiHelpCircle /> Knowledge Check
+                  </h3>
+                  <p style={{ color: '#b45309', marginBottom: '1rem' }}>Test your understanding of this topic with a quick quiz.</p>
+                  
+                  {!showQuiz ? (
+                    <button 
+                      className="btn" 
+                      style={{ background: '#f59e0b', color: '#fff', border: 'none', padding: '0.5rem 1rem', borderRadius: '4px', cursor: 'pointer' }} 
+                      onClick={() => setShowQuiz(true)}
+                    >
+                      Start Quiz
+                    </button>
+                  ) : (
+                    <div className="quiz-container-player">
+                      <QuizWidget 
+                        questions={currentTopic.quiz.questions.map(q => ({ 
+                          question: q.question, 
+                          options: q.options, 
+                          answer: q.correctAnswer 
+                        }))}
+                        onComplete={(score, total) => {
+                          showToast(`Quiz completed! You scored ${score}/${total}`);
+                          if (score === total && !isTopicComplete(currentTopic._id)) {
+                            markCurrentTopicComplete();
+                          }
+                        }}
+                      />
+                      <button 
+                        className="btn btn-soft" 
+                        style={{ marginTop: '1.5rem', width: '100%' }} 
+                        onClick={() => setShowQuiz(false)}
+                      >
+                        Minimize Quiz
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+
               <button
                 className="btn btn-primary"
-                style={{ marginTop: '1rem', padding: '0.75rem 1.5rem' }}
+                style={{ marginTop: '2rem', padding: '0.75rem 1.5rem' }}
                 onClick={markCurrentTopicComplete}
                 disabled={isTopicComplete(currentTopic._id)}
               >
