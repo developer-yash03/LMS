@@ -9,6 +9,8 @@ import {
   FiUploadCloud,
   FiLoader,
   FiHelpCircle,
+  FiAward,
+  FiExternalLink,
 } from 'react-icons/fi';
 import { useParams } from 'react-router-dom';
 import { useToast } from '../../context/ToastContext';
@@ -239,12 +241,48 @@ const Player = () => {
                   </h3>
                   
                   {submissionStatus ? (
-                    <div style={{ padding: '1rem', background: '#dcfce7', borderRadius: '6px', color: '#166534' }}>
-                      <p style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: '500' }}>
-                        <FiCheckCircle /> Assignment submitted on {new Date(submissionStatus.submittedAt).toLocaleDateString()}
-                      </p>
-                      <a href={submissionStatus.fileUrl} target="_blank" rel="noreferrer" style={{ display: 'inline-block', marginTop: '0.5rem', color: '#15803d', textDecoration: 'underline' }}>
-                        View your submission
+                    <div style={{ 
+                      padding: '1.5rem', 
+                      background: submissionStatus.status === 'graded' ? '#eff6ff' : '#dcfce7', 
+                      borderRadius: '8px', 
+                      color: submissionStatus.status === 'graded' ? '#1e40af' : '#166534', 
+                      border: '1px solid currentColor',
+                      opacity: 0.9 
+                    }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                        <div>
+                          <p style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: '600', fontSize: '1.1rem' }}>
+                            {submissionStatus.status === 'graded' ? <FiAward /> : <FiCheckCircle />}
+                            {submissionStatus.status === 'graded' ? 'Assignment Graded' : 'Assignment Submitted'}
+                          </p>
+                          <p style={{ fontSize: '0.9rem', marginTop: '0.25rem' }}>
+                            {submissionStatus.status === 'graded' 
+                              ? `Reviewed on ${new Date(submissionStatus.gradedAt).toLocaleDateString()}` 
+                              : `Submitted on ${new Date(submissionStatus.submittedAt).toLocaleDateString()}`}
+                          </p>
+                        </div>
+                        {submissionStatus.status === 'graded' && (
+                          <div style={{ textAlign: 'right' }}>
+                            <span style={{ fontSize: '0.7rem', textTransform: 'uppercase', fontWeight: '600', opacity: 0.8 }}>Score</span>
+                            <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>{submissionStatus.grade} / 10</div>
+                          </div>
+                        )}
+                      </div>
+                      
+                      {submissionStatus.feedback && (
+                        <div style={{ marginTop: '1rem', padding: '0.75rem', background: 'rgba(255,255,255,0.4)', borderRadius: '6px', fontSize: '0.9rem' }}>
+                          <strong style={{ display: 'block', marginBottom: '0.25rem' }}>Instructor Feedback:</strong>
+                          {submissionStatus.feedback}
+                        </div>
+                      )}
+
+                      <a 
+                        href={submissionStatus.fileUrl} 
+                        target="_blank" 
+                        rel="noreferrer" 
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', marginTop: '1rem', color: 'inherit', textDecoration: 'underline', fontWeight: '500', fontSize: '0.9rem' }}
+                      >
+                        <FiExternalLink /> View My Submission
                       </a>
                     </div>
                   ) : (

@@ -1104,3 +1104,59 @@ exports.reviewCourseApproval = async (req, res) => {
     res.status(500).json({ success: false, error: error.message });
   }
 };
+// Get all submissions for a course (for instructors)
+exports.getCourseSubmissions = async (req, res) => {
+  try {
+    const { courseId } = req.params;
+    const instructorId = req.user._id;
+
+    const course = await Course.findById(courseId);
+    if (!course) return res.status(404).json({ success: false, message: "Course not found" });
+
+    // Security: Only course instructor or admin can view all submissions
+    if (String(course.instructor) !== String(instructorId) && req.user.role !== "admin") {
+      return res.status(403).json({ success: false, message: "Not authorized" });
+    }
+
+    const submissions = await Submission.find({ course: courseId })
+      .populate("user", "name email")
+      .populate("topic", "title")
+      .sort({ submittedAt: -1 });
+
+    res.status(200).json({ success: true, data: submissions });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+// Grade a submission
+exports.gradeSubmission = async (req, res) => {
+  try {
+    const { submissionId } = req.params;
+    const { grade, feedback } = req.body;
+    const instructorId = req.user._id;
+
+    if (grade < 0 || grade > 10) {
+      return res.status(400).json({ success: false, message: "Grade must be between 0 and 10" });
+    }
+
+    const submission = await Submission.findById(submissionId).populate("course");
+    if (!submission) return res.status(404).json({ success: false, message: "Submission not found" });
+
+    // Security: Only course instructor or admin can grade
+    if (String(submission.course.instructor) !== String(instructorId) && req.user.role !== "admin") {
+      return res.status(403).json({ success: false, message: "Not authorized" });
+    }
+
+    submission.grade = grade;
+    submission.feedback = feedback || "";
+    submission.status = "graded";
+    submission.gradedAt = Date.now();
+
+    await submission.save();
+
+    res.status(200).json({ success: true, message: "Assignment graded successfully", data: submission });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
