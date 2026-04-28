@@ -127,6 +127,7 @@ const Player = () => {
         <p>You might not be enrolled in this course yet.</p>
       </section>
     );
+  }
 
   const getEmbedUrl = (url) => {
     if (!url) return null;
