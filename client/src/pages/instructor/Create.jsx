@@ -16,9 +16,8 @@ import {
   FiUpload,
   FiXCircle,
   FiVideo,
-  FiYoutube,
 } from 'react-icons/fi';
-import { apiRequest } from '../../services/api';
+import { apiRequest, uploadMedia } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
 import './InstructorTheme.css';
 
@@ -43,6 +42,7 @@ const createTopicDraft = () => ({
   description: '',
   videoUrl: '',
   videoType: 'youtube',
+  assignmentUrl: '',
   notes: '',
   durationMinutes: '',
   order: '',
@@ -86,6 +86,10 @@ const Create = () => {
   const [savingCourse, setSavingCourse] = useState(false);
   const [savingModule, setSavingModule] = useState(false);
   const [savingTopics, setSavingTopics] = useState({});
+  const [configCategories, setConfigCategories] = useState(['Web Development', 'Mobile Development', 'Data Science', 'Cloud Computing', 'DevOps', 'Other']);
+  const [configLevels, setConfigLevels] = useState(['Beginner', 'Intermediate', 'Advanced']);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadingTopicId, setUploadingTopicId] = useState(null);
   const [error, setError] = useState('');
 
   const selectedCourse = useMemo(
@@ -144,9 +148,21 @@ const Create = () => {
     }
   };
 
+  const loadConfig = async () => {
+    try {
+      const catRes = await apiRequest('/config/categories', 'GET');
+      if (catRes && catRes.data) setConfigCategories(catRes.data.map(c => c.name));
+      const lvlRes = await apiRequest('/config/levels', 'GET');
+      if (lvlRes && lvlRes.data) setConfigLevels(lvlRes.data.map(l => l.name));
+    } catch (err) {
+      console.error('Failed to load config options', err);
+    }
+  };
+
   /* eslint-disable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
   useEffect(() => {
     loadCourses();
+    loadConfig();
   }, []);
   /* eslint-enable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
 
@@ -309,15 +325,6 @@ const Create = () => {
       showToast(topicError.message || 'Unable to delete topic', 'error');
     }
   };
-
-  const categories = [
-    'Web Development',
-    'Mobile Development',
-    'Data Science',
-    'Cloud Computing',
-    'DevOps',
-    'Other',
-  ];
 
   const selectedStatus = statusMeta[resolveStatus(selectedCourse)] || statusMeta.approved;
 
@@ -495,7 +502,7 @@ const Create = () => {
                     value={courseForm.category}
                     onChange={(event) => handleCourseField('category', event.target.value)}
                   >
-                    {categories.map((category) => (
+                    {configCategories.map((category) => (
                       <option key={category} value={category}>
                         {category}
                       </option>
@@ -550,21 +557,50 @@ const Create = () => {
                     value={courseForm.level}
                     onChange={(event) => handleCourseField('level', event.target.value)}
                   >
-                    <option value="Beginner">Beginner</option>
-                    <option value="Intermediate">Intermediate</option>
-                    <option value="Advanced">Advanced</option>
+                    {configLevels.map((level) => (
+                      <option key={level} value={level}>
+                        {level}
+                      </option>
+                    ))}
                   </select>
                 </label>
 
                 <label className="studio-field studio-span-2">
                   <span>
-                    <FiUpload /> Thumbnail URL
+                    <FiUpload /> Course Thumbnail
                   </span>
+                  <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={async (e) => {
+                        const file = e.target.files[0];
+                        if (!file) return;
+                        setIsUploading(true);
+                        try {
+                          const res = await uploadMedia(file);
+                          handleCourseField('thumbnail', res.url);
+                          showToast('Thumbnail uploaded successfully');
+                        } catch (err) {
+                          showToast('Failed to upload thumbnail', 'error');
+                        } finally {
+                          setIsUploading(false);
+                        }
+                      }}
+                      style={{ flex: 1 }}
+                      disabled={isUploading}
+                    />
+                    {isUploading && <FiLoader className="spin" />}
+                    {courseForm.thumbnail && (
+                      <img src={courseForm.thumbnail} alt="Thumbnail preview" style={{ height: '40px', borderRadius: '4px', objectFit: 'cover', width: '70px' }} />
+                    )}
+                  </div>
                   <input
                     type="text"
                     value={courseForm.thumbnail}
                     onChange={(event) => handleCourseField('thumbnail', event.target.value)}
-                    placeholder="Paste a course thumbnail URL"
+                    placeholder="Or paste an image URL directly"
+                    style={{ marginTop: '0.5rem' }}
                   />
                 </label>
 
@@ -761,14 +797,81 @@ const Create = () => {
 
                             <label className="studio-field studio-span-2">
                               <span>
-                                <FiYoutube /> Video URL
+                                <FiYoutube /> Video Content
                               </span>
-                              <input
-                                type="text"
-                                value={draft.videoUrl}
-                                onChange={(event) => updateTopicDraft(module._id, 'videoUrl', event.target.value)}
-                                placeholder="Paste a YouTube or video URL"
-                              />
+                              {draft.videoType === 'upload' ? (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                  <input
+                                    type="file"
+                                    accept="video/*"
+                                    disabled={uploadingTopicId === module._id}
+                                    onChange={async (e) => {
+                                      const file = e.target.files[0];
+                                      if (!file) return;
+                                      setUploadingTopicId(module._id);
+                                      try {
+                                        const res = await uploadMedia(file);
+                                        updateTopicDraft(module._id, 'videoUrl', res.url);
+                                        showToast('Video uploaded successfully');
+                                      } catch (err) {
+                                        showToast('Failed to upload video', 'error');
+                                      } finally {
+                                        setUploadingTopicId(null);
+                                      }
+                                    }}
+                                  />
+                                  {uploadingTopicId === module._id && (
+                                    <span style={{ fontSize: '0.85rem', color: '#6b7280', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                      <FiLoader className="spin" /> Uploading video to cloud...
+                                    </span>
+                                  )}
+                                  {draft.videoUrl && uploadingTopicId !== module._id && (
+                                    <p style={{ fontSize: '0.8rem', color: '#16A34A', margin: 0 }}>✓ Video ready: {draft.videoUrl.split('/').pop()}</p>
+                                  )}
+                                </div>
+                              ) : (
+                                <input
+                                  type="text"
+                                  value={draft.videoUrl}
+                                  onChange={(event) => updateTopicDraft(module._id, 'videoUrl', event.target.value)}
+                                  placeholder="Paste a YouTube or external URL"
+                                />
+                              )}
+                            </label>
+
+                            <label className="studio-field studio-span-2">
+                              <span>
+                                <FiLink /> Assignment / Resource File (Optional)
+                              </span>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                <input
+                                  type="file"
+                                  accept=".pdf,.doc,.docx,.zip,.txt"
+                                  disabled={uploadingTopicId === module._id + "_assignment"}
+                                  onChange={async (e) => {
+                                    const file = e.target.files[0];
+                                    if (!file) return;
+                                    setUploadingTopicId(module._id + "_assignment");
+                                    try {
+                                      const res = await uploadMedia(file);
+                                      updateTopicDraft(module._id, 'assignmentUrl', res.url);
+                                      showToast('Assignment uploaded successfully');
+                                    } catch (err) {
+                                      showToast('Failed to upload assignment', 'error');
+                                    } finally {
+                                      setUploadingTopicId(null);
+                                    }
+                                  }}
+                                />
+                                {uploadingTopicId === module._id + "_assignment" && (
+                                  <span style={{ fontSize: '0.85rem', color: '#6b7280', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <FiLoader className="spin" /> Uploading file...
+                                  </span>
+                                )}
+                                {draft.assignmentUrl && uploadingTopicId !== module._id + "_assignment" && (
+                                  <p style={{ fontSize: '0.8rem', color: '#16A34A', margin: 0 }}>✓ Assignment attached</p>
+                                )}
+                              </div>
                             </label>
 
                             <label className="studio-field">

@@ -23,4 +23,7 @@ const moduleSchema = new mongoose.Schema({
   ]
 });
 
+// Speeds up Module.find({ course }) and sorted population
+moduleSchema.index({ course: 1, order: 1 });
+
 module.exports = mongoose.model("Module", moduleSchema);

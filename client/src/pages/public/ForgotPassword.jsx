@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import OtpInput from '../../components/auth/OtpInput';
 import { isValidEmail } from '../../utils/authValidation';
 import { apiRequest } from '../../services/api';
@@ -9,20 +9,10 @@ import './Auth.css';
 
 const RESEND_SECONDS = 120;
 
-const getPasswordStrength = (value) => {
-  let score = 0;
-  if (value.length >= 8) score += 1;
-  if (/[A-Z]/.test(value)) score += 1;
-  if (/[0-9]/.test(value)) score += 1;
-  if (/[^A-Za-z0-9]/.test(value)) score += 1;
 
-  if (score <= 1) return { label: 'Weak', width: '25%', color: '#ef4444' };
-  if (score <= 2) return { label: 'Fair', width: '50%', color: '#f59e0b' };
-  if (score <= 3) return { label: 'Good', width: '75%', color: '#3b82f6' };
-  return { label: 'Strong', width: '100%', color: '#16a34a' };
-};
 
 const ForgotPassword = () => {
+  const navigate = useNavigate();
   const { showToast } = useToast();
   const [step, setStep] = useState(1);
   const [email, setEmail] = useState('');
@@ -30,17 +20,19 @@ const ForgotPassword = () => {
   const [otpCode, setOtpCode] = useState('');
   const [counter, setCounter] = useState(RESEND_SECONDS);
   const [newPassword, setNewPassword] = useState('');
+  const [passwordTouched, setPasswordTouched] = useState(false);
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [successMessage, setSuccessMessage] = useState('');
 
   const trimmedEmail = useMemo(() => email.trim(), [email]);
   const emailValid = useMemo(() => isValidEmail(trimmedEmail), [trimmedEmail]);
   const showEmailError = emailTouched && trimmedEmail.length > 0 && !emailValid;
 
-  const strength = useMemo(() => getPasswordStrength(newPassword), [newPassword]);
+  const passwordValid = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/.test(newPassword);
+  const showPasswordError = passwordTouched && newPassword.length > 0 && !passwordValid;
+
   const passwordsMatch = newPassword.length > 0 && newPassword === confirmPassword;
-  const canReset = passwordsMatch && newPassword.length >= 8;
+  const canReset = passwordsMatch && passwordValid;
 
   useEffect(() => {
     if (step !== 2 || counter <= 0) return;
@@ -91,7 +83,8 @@ const ForgotPassword = () => {
         newPassword: newPassword
       });
       setLoading(false);
-      setSuccessMessage('Password reset successful. You can now sign in.');
+      showToast('Password reset successful. You can now sign in.', 'success');
+      navigate('/login');
     } catch (error) {
       setLoading(false);
       showToast(error.message || 'Password reset failed', 'error');
@@ -183,57 +176,50 @@ const ForgotPassword = () => {
 
             {step === 3 && (
               <>
-                {!successMessage ? (
-                  <>
-                    <div className="auth-header">
-                      <h1>Reset Password</h1>
-                      <p>Create a new secure password for your account.</p>
-                    </div>
-                    <form className="auth-modern-form" onSubmit={handleResetPassword}>
-                      <div className="modern-field">
-                        <label>New Password</label>
-                        <div className="input-wrapper">
-                          <FiLock className="input-icon" />
-                          <input
-                            type="password"
-                            value={newPassword}
-                            onChange={(e) => setNewPassword(e.target.value)}
-                            placeholder="Min. 8 characters"
-                          />
-                        </div>
-                        <div className="strength-bar-container">
-                          <div className="strength-bar" style={{ width: strength.width, backgroundColor: strength.color }}></div>
-                        </div>
-                        <span className="strength-text">Strength: {strength.label}</span>
-                      </div>
-                      <div className="modern-field">
-                        <label>Confirm Password</label>
-                        <div className="input-wrapper">
-                          <FiShield className="input-icon" />
-                          <input
-                            type="password"
-                            value={confirmPassword}
-                            onChange={(e) => setConfirmPassword(e.target.value)}
-                            placeholder="Re-enter password"
-                          />
-                        </div>
-                        {confirmPassword.length > 0 && !passwordsMatch && (
-                          <span className="error-hint">Passwords do not match.</span>
-                        )}
-                      </div>
-                      <button type="submit" className="btn-auth-primary" disabled={!canReset || loading}>
-                        {loading ? 'Resetting...' : 'Reset Password'}
-                      </button>
-                    </form>
-                  </>
-                ) : (
-                  <div className="auth-success-screen">
-                    <FiCheckCircle size={60} color="#16a34a" />
-                    <h1>Success!</h1>
-                    <p>{successMessage}</p>
-                    <Link to="/login" className="btn-auth-primary">Sign In</Link>
+                <>
+                  <div className="auth-header">
+                    <h1>Reset Password</h1>
+                    <p>Create a new secure password for your account.</p>
                   </div>
-                )}
+                  <form className="auth-modern-form" onSubmit={handleResetPassword}>
+                    <div className="modern-field">
+                      <label>New Password</label>
+                      <div className="input-wrapper">
+                        <FiLock className="input-icon" />
+                        <input
+                          type="password"
+                          value={newPassword}
+                          onChange={(e) => setNewPassword(e.target.value)}
+                          onBlur={() => setPasswordTouched(true)}
+                          placeholder="Min. 8 characters"
+                        />
+                      </div>
+                      {showPasswordError && (
+                        <span className="error-hint" style={{ fontSize: '0.8rem', color: '#dc2626', marginTop: '0.25rem', display: 'block' }}>
+                          Password must be at least 8 characters long and include an uppercase letter, a lowercase letter, a number, and a special character.
+                        </span>
+                      )}
+                    </div>
+                    <div className="modern-field">
+                      <label>Confirm Password</label>
+                      <div className="input-wrapper">
+                        <FiShield className="input-icon" />
+                        <input
+                          type="password"
+                          value={confirmPassword}
+                          onChange={(e) => setConfirmPassword(e.target.value)}
+                          placeholder="Re-enter password"
+                        />
+                      </div>
+                      {confirmPassword.length > 0 && !passwordsMatch && (
+                        <span className="error-hint">Passwords do not match.</span>
+                      )}
+                    </div>
+                    <button type="submit" className="btn-auth-primary" disabled={!canReset || loading}>
+                      {loading ? 'Resetting...' : 'Reset Password'}
+                    </button>
+                  </form>
+                </>
               </>
             )}
 

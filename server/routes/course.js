@@ -8,6 +8,8 @@ const {
   getCourseContent,
   markTopicComplete,
   getCourseProgress,
+  submitAssignment,
+  getAssignmentSubmission,
   getInstructorCourses,
   createCourse,
   updateCourse,
@@ -21,7 +23,8 @@ const {
   toggleWishlist,
   getWishlist,
   getPendingCourseApprovals,
-  reviewCourseApproval
+  reviewCourseApproval,
+  getPublicFeaturedCourses
 } = require("../controllers/courseController");
 const { verifyToken, authorizeRoles } = require("../middlewares/auth");
 
@@ -29,6 +32,7 @@ const requireInstructorAccess = [verifyToken, authorizeRoles("instructor", "admi
 
 // Public routes
 router.get("/browse", getAllCourses);
+router.get("/public", getPublicFeaturedCourses);
 
 // Protected student routes 
 router.post("/:courseId/enroll", verifyToken, enrollCourse);
@@ -38,6 +42,8 @@ router.post("/:id/wishlist", verifyToken, toggleWishlist);
 router.get("/:courseId/content", verifyToken, getCourseContent);
 router.get("/:courseId/progress", verifyToken, getCourseProgress);
 router.post("/:courseId/topic/:topicId/complete", verifyToken, markTopicComplete);
+router.post("/:courseId/topic/:topicId/submit", verifyToken, submitAssignment);
+router.get("/:courseId/topic/:topicId/submission", verifyToken, getAssignmentSubmission);
 
 // Instructor/admin course management
 router.get("/instructor/courses", ...requireInstructorAccess, getInstructorCourses);

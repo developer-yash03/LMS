@@ -12,6 +12,8 @@ const Browse = () => {
   const [searchParams] = useSearchParams();
   const [courses, setCourses] = useState([]);
   const [wishlist, setWishlist] = useState([]);
+  const [configCategories, setConfigCategories] = useState(['All']);
+  const [configLevels, setConfigLevels] = useState(['All']);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -59,17 +61,25 @@ const Browse = () => {
     }
   };
 
-  const categoryOptions = [
-    'All',
-    'Web Development',
-    'Mobile Development',
-    'Data Science',
-    'Cloud Computing',
-    'DevOps',
-    'Other',
-  ];
-
   useEffect(() => {
+    const fetchConfig = async () => {
+      try {
+        const catRes = await apiRequest('/config/categories', 'GET');
+        if (catRes && catRes.data) {
+          setConfigCategories(['All', ...catRes.data.map(c => c.name)]);
+        }
+        const lvlRes = await apiRequest('/config/levels', 'GET');
+        if (lvlRes && lvlRes.data) {
+          setConfigLevels(['All', ...lvlRes.data.map(l => l.name)]);
+        }
+      } catch (err) {
+        console.error("Failed to load config", err);
+        // Fallbacks
+        setConfigCategories(['All', 'Web Development', 'Mobile Development', 'Data Science', 'Cloud Computing', 'DevOps', 'Other']);
+        setConfigLevels(['All', 'Beginner', 'Intermediate', 'Advanced']);
+      }
+    };
+    fetchConfig();
     setSearchTerm(searchParams.get('search') || '');
   }, [searchParams]);
 
@@ -166,7 +176,7 @@ const Browse = () => {
         </div>
 
         <select className="browse-select" value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}>
-          {categoryOptions.map((category) => (
+          {configCategories.map((category) => (
             <option key={category} value={category}>
               {category === 'All' ? 'All Categories' : category}
             </option>
@@ -174,10 +184,11 @@ const Browse = () => {
         </select>
 
         <select className="browse-select" value={levelFilter} onChange={(e) => setLevelFilter(e.target.value)}>
-          <option value="All">All Levels</option>
-          <option value="Beginner">Beginner</option>
-          <option value="Intermediate">Intermediate</option>
-          <option value="Advanced">Advanced</option>
+          {configLevels.map((level) => (
+            <option key={level} value={level}>
+              {level === 'All' ? 'All Levels' : level}
+            </option>
+          ))}
         </select>
 
         <select className="browse-select" value={priceFilter} onChange={(e) => setPriceFilter(e.target.value)}>
