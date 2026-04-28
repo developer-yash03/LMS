@@ -67,6 +67,8 @@ app.use("/api/upload", uploadRoutes);
 app.use("/api/payment", require("./routes/paymentRoutes"));
 app.use("/api/admin", require("./routes/admin"));
 
+app.use("/api/courses", require("./routes/course"));
+app.use("/api/quizzes", require("./routes/quiz"));
 app.use("/api", require("./routes/test")); // LAST
 
 // Start server locally OR export for Vercel Serverless Functions

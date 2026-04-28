@@ -1,110 +1,112 @@
-import React, { useMemo } from 'react';
-import { FiDownload, FiTrendingUp } from 'react-icons/fi';
+import React, { useState, useEffect } from 'react';
+import { FiTrendingUp, FiFilter, FiDollarSign, FiUsers, FiBook } from 'react-icons/fi';
+import { apiRequest } from '../../services/api';
 import './InstructorTheme.css';
 
-const monthlyRevenue = [
-  { month: 'Apr', amount: 12600 },
-  { month: 'May', amount: 15400 },
-  { month: 'Jun', amount: 18950 },
-  { month: 'Jul', amount: 17100 },
-  { month: 'Aug', amount: 23200 },
-  { month: 'Sep', amount: 24800 },
-];
-
-const courseBreakdown = [
-  { id: 'c1', title: 'Advanced Classical Rhetoric', students: 1248, revenue: 42400, tag: 'Top Seller' },
-  { id: 'c2', title: 'Foundations of Ethics', students: 854, revenue: 28150, tag: 'Stable' },
-  { id: 'c3', title: 'Modern Political Theory', students: 2105, revenue: 56920, tag: 'Trending' },
-  { id: 'c4', title: 'Logic & Argumentation', students: 412, revenue: 15380, tag: 'Niche' },
-];
-
 const Earnings = () => {
-  const stats = useMemo(() => {
-    const lifetime = monthlyRevenue.reduce((sum, item) => sum + item.amount, 0);
-    const bestMonth = monthlyRevenue.reduce((best, current) => (current.amount > best.amount ? current : best), monthlyRevenue[0]);
+  const [earnings, setEarnings] = useState([]);
+  const [total, setTotal] = useState(0);
+  const [duration, setDuration] = useState('all');
+  const [loading, setLoading] = useState(true);
 
-    return {
-      lifetime,
-      bestMonth,
+  useEffect(() => {
+    const fetchEarnings = async () => {
+      setLoading(true);
+      try {
+        const response = await apiRequest(`/payment/earnings?duration=${duration}`);
+        if (response.success) {
+          setEarnings(response.data || []);
+          setTotal(response.total || 0);
+        }
+      } catch (error) {
+        console.error('Failed to fetch earnings:', error);
+      } finally {
+        setLoading(false);
+      }
     };
-  }, []);
 
-  const maxRevenue = Math.max(...monthlyRevenue.map((item) => item.amount));
+    fetchEarnings();
+  }, [duration]);
 
   return (
     <section className="page-container student-page instructor-theme-page">
       <div className="student-header-banner instructor-header-banner">
         <div className="student-header-content">
-          <span className="student-header-label">SCHOLARHUB EARNINGS</span>
-          <h1>Earnings Overview</h1>
-          <p>Manage your institutional revenue and analyze course-level performance.</p>
+          <span className="student-header-label">SCHOLARHUB REVENUE</span>
+          <h1>Instructor Earnings</h1>
+          <p>Real-time revenue tracking across all your published courses.</p>
         </div>
       </div>
 
       <div className="instructor-earnings-grid">
         <article className="student-panel">
           <div className="student-panel-body">
-            <span className="studio-section-label">Lifetime Earnings</span>
-            <h2 className="earnings-total">₹{stats.lifetime.toLocaleString('en-US', { minimumFractionDigits: 2 })}</h2>
-            <p className="earnings-growth">+12.5% from last month</p>
+            <span className="studio-section-label">Total Revenue ({duration === 'all' ? 'Lifetime' : `Last ${duration}`})</span>
+            <h2 className="earnings-total">₹{total.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</h2>
+            <div className="earnings-filter-row" style={{ marginTop: '1rem', display: 'flex', gap: '0.5rem' }}>
+              {['all', '7d', '30d', '1y'].map(d => (
+                <button 
+                  key={d}
+                  onClick={() => setDuration(d)}
+                  className={`btn btn-sm ${duration === d ? 'btn-primary' : 'btn-soft'}`}
+                >
+                  {d === 'all' ? 'All Time' : d.toUpperCase()}
+                </button>
+              ))}
+            </div>
           </div>
         </article>
+        
         <article className="student-panel">
           <div className="student-panel-body earnings-highlight">
-            <h3>Expanding Reach</h3>
+            <h3><FiTrendingUp /> Performance Tip</h3>
             <p>
-              Your course "Classical Rhetoric" saw a significant uptick this month, contributing to a 24% revenue
-              spike in the Humanities sector.
+              Courses with detailed descriptions and video previews tend to have 30% higher conversion rates. 
+              Keep your curriculum updated to maintain steady revenue.
             </p>
-            <button type="button" className="btn btn-soft">View Details</button>
           </div>
         </article>
       </div>
 
       <article className="student-panel full-width">
         <div className="student-panel-header">
-          <h3><FiTrendingUp size={18} /> Revenue Trends</h3>
-          <span className="student-panel-tag">6 Months</span>
+          <h3><FiBook /> Course-wise Breakdown</h3>
+          <span className="student-panel-tag">{earnings.length} Courses</span>
         </div>
         <div className="student-panel-body">
-          <div className="earnings-chart-wrap">
-            {monthlyRevenue.map((item) => (
-              <div key={item.month} className="earnings-bar-col">
-                <div className="earnings-bar-track">
-                  <div className="earnings-bar" style={{ height: `${Math.max(12, Math.round((item.amount / maxRevenue) * 100))}%` }} />
+          {loading ? (
+            <div className="studio-loading" style={{ padding: '2rem', textAlign: 'center' }}>
+              <div className="spinner"></div>
+              <p>Calculating earnings...</p>
+            </div>
+          ) : earnings.length > 0 ? (
+            <div className="earnings-course-grid">
+              {earnings.map((item) => (
+                <div className="earnings-course-card" key={item.courseId}>
+                  <div style={{ flex: 1 }}>
+                    <h4 style={{ fontSize: '1.1rem', marginBottom: '0.25rem' }}>{item.title}</h4>
+                    <p style={{ color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                      <FiUsers size={14} /> {item.salesCount} Total Sales
+                    </p>
+                  </div>
+                  <div className="earnings-course-meta" style={{ textAlign: 'right' }}>
+                    <strong style={{ fontSize: '1.25rem', color: 'var(--primary-blue)', display: 'block' }}>
+                      ₹{item.totalEarned.toLocaleString('en-IN')}
+                    </strong>
+                    <span className="status-chip neutral" style={{ fontSize: '0.75rem' }}>
+                      Average Price: ₹{item.salesCount > 0 ? (item.totalEarned / item.salesCount).toFixed(0) : 0}
+                    </span>
+                  </div>
                 </div>
-                <span>{item.month}</span>
-              </div>
-            ))}
-          </div>
-          <p className="studio-hint">
-            Best month: {stats.bestMonth.month} (₹{stats.bestMonth.amount.toLocaleString()})
-          </p>
-        </div>
-      </article>
-
-      <article className="student-panel full-width">
-        <div className="student-panel-header">
-          <h3>Course Breakdown</h3>
-          <button type="button" className="btn btn-soft btn-sm">
-            <FiDownload size={14} /> Download Report
-          </button>
-        </div>
-        <div className="student-panel-body">
-          <div className="earnings-course-grid">
-            {courseBreakdown.map((course) => (
-              <div className="earnings-course-card" key={course.id}>
-                <div>
-                  <h4>{course.title}</h4>
-                  <p>{course.students.toLocaleString()} Students Enrolled</p>
-                </div>
-                <div className="earnings-course-meta">
-                  <strong>₹{course.revenue.toLocaleString()}</strong>
-                  <span className="status-chip neutral">{course.tag}</span>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="studio-empty" style={{ padding: '4rem', textAlign: 'center' }}>
+              <FiDollarSign size={48} style={{ opacity: 0.2, marginBottom: '1rem' }} />
+              <h4>No earnings data for this period</h4>
+              <p>When students purchase your courses, their payments will appear here.</p>
+            </div>
+          )}
         </div>
       </article>
     </section>

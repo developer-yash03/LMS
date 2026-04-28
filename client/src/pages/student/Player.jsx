@@ -49,6 +49,8 @@ const Player = () => {
         ]);
 
         const content = contentResponse?.data || {};
+        console.log('Player Data Received:', content);
+        console.log('Player Data:', content);
         setCourse(content.course || null);
         setModules(Array.isArray(content.modules) ? content.modules : []);
 

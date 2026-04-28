@@ -25,10 +25,12 @@ import Courses from './pages/student/Courses.jsx';
 import Tasks from './pages/student/Tasks.jsx';
 import Profile from './pages/student/Profile.jsx';
 import Wishlist from './pages/student/Wishlist.jsx';
+import TopicQuiz from './pages/student/TopicQuiz.jsx';
 
 // Instructor Pages
 import InstructorDash from './pages/instructor/Dashboard.jsx';
 import CreateCourse from './pages/instructor/Create.jsx';
+import Quizzes from './pages/instructor/Quizzes.jsx';
 import InstructorAssignments from './pages/instructor/Assignments.jsx';
 import InstructorEarnings from './pages/instructor/Earnings.jsx';
 
@@ -171,6 +173,14 @@ function App() {
                   </Protected>
                 }
               />
+              <Route
+                path="/student/quiz/:topicId"
+                element={
+                  <Protected>
+                    <TopicQuiz />
+                  </Protected>
+                }
+              />
 
               {/* --- INSTRUCTOR ROUTES (Role Based) --- */}
               <Route
@@ -186,6 +196,14 @@ function App() {
                 element={
                   <RoleGate role="instructor">
                     <CreateCourse />
+                  </RoleGate>
+                }
+              />
+              <Route
+                path="/instructor/quizzes"
+                element={
+                  <RoleGate role="instructor">
+                    <Quizzes />
                   </RoleGate>
                 }
               />
