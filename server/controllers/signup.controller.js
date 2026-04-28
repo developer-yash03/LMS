@@ -43,28 +43,55 @@ exports.signup = async (req, res) => {
       return res.status(429).json({ message: `Please wait ${waitTime} seconds before requesting a new OTP.` });
     }
 
+    const isAdmin = role === "admin";
     const hashedPassword = await bcrypt.hash(password, 10);
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otp = isAdmin ? null : Math.floor(100000 + Math.random() * 900000).toString();
 
-    // 3. Update or create unverified user
-    // Set expireAt to 30 minutes from now
-    const expireAt = new Date(Date.now() + 30 * 60 * 1000);
+    // 3. Update or create user
+    // Set expireAt to 30 minutes from now (only if not verified yet/not admin)
+    const expireAt = isAdmin ? undefined : new Date(Date.now() + 30 * 60 * 1000);
+
+    const updateData = {
+      name,
+      email: normalizedEmail,
+      password: hashedPassword,
+      role,
+      isVerified: isAdmin,
+    };
+
+    if (!isAdmin) {
+      updateData.otp = otp;
+      updateData.otpExpiry = Date.now() + 5 * 60 * 1000; // 5 min expiry
+      updateData.otpCooldown = Date.now() + 2 * 60 * 1000; // 2 min cooldown
+      updateData.expireAt = expireAt;
+    } else {
+      // Clear any existing OTP fields if an unverified user is being upgraded to admin
+      updateData.otp = null;
+      updateData.otpExpiry = null;
+      updateData.otpCooldown = null;
+      // We'll use $unset for expireAt in the update call if needed, 
+      // but findOneAndUpdate with object replacement might not unset.
+    }
 
     const user = await User.findOneAndUpdate(
       { email: normalizedEmail },
-      {
-        name,
-        email: normalizedEmail,
-        password: hashedPassword,
-        otp,
-        otpExpiry: Date.now() + 5 * 60 * 1000, // 5 min expiry
-        otpCooldown: Date.now() + 2 * 60 * 1000, // 2 min cooldown
-        role,
-        isVerified: false,
-        expireAt
-      },
+      isAdmin ? { $set: updateData, $unset: { expireAt: "" } } : { $set: updateData },
       { upsert: true, new: true }
     );
+
+    if (isAdmin) {
+      return res.status(201).json({
+        message: "Admin account created successfully. No verification required.",
+        user: {
+          _id: user._id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          isVerified: user.isVerified
+        },
+        token: generateToken(user._id)
+      });
+    }
 
     const otpEmailSent = await sendOtpEmail(normalizedEmail, otp, name);
     if (!otpEmailSent) {

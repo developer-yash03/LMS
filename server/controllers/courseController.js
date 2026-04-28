@@ -128,41 +128,47 @@ exports.getAllCourses = async (req, res) => {
     } = req.query;
 
     let filter = {
-      $or: [
-        { approvalStatus: COURSE_APPROVAL_STATUS.APPROVED },
-        { approvalStatus: { $exists: false } }
+      $and: [
+        {
+          $or: [
+            { approvalStatus: COURSE_APPROVAL_STATUS.APPROVED },
+            { approvalStatus: { $exists: false } }
+          ]
+        }
       ]
     };
 
     // Filter by category
     if (category) {
-      filter.category = category;
+      filter.$and.push({ category });
     }
 
     // Filter by instructor
     if (instructor) {
-      filter.instructor = instructor;
+      filter.$and.push({ instructor });
     }
 
     // Filter by price range
     if (priceRange) {
       const [minPrice, maxPrice] = priceRange.split("-").map(Number);
       if (minPrice !== undefined && maxPrice !== undefined) {
-        filter.price = { $gte: minPrice, $lte: maxPrice };
+        filter.$and.push({ price: { $gte: minPrice, $lte: maxPrice } });
       }
     }
 
     // Filter by level
     if (level) {
-      filter.level = level;
+      filter.$and.push({ level });
     }
 
     // Search by name or keyword
     if (search) {
-      filter.$or = [
-        { title: { $regex: search, $options: "i" } },
-        { description: { $regex: search, $options: "i" } }
-      ];
+      filter.$and.push({
+        $or: [
+          { title: { $regex: search, $options: "i" } },
+          { description: { $regex: search, $options: "i" } }
+        ]
+      });
     }
 
     const sortOptionsMap = {
@@ -308,9 +314,20 @@ exports.getEnrolledCourses = async (req, res) => {
       return res.status(404).json({ success: false, message: "User not found" });
     }
 
+    const coursesWithProgress = await Promise.all(
+      user.enrolledCourses.map(async (course) => {
+        if (!course) return null;
+        const progress = await Progress.findOne({ user: userId, course: course._id });
+        return {
+          ...course.toObject(),
+          progressPercentage: progress ? progress.progressPercentage : 0
+        };
+      })
+    );
+
     const uniqueCourses = [];
     const seen = new Set();
-    for (const course of user.enrolledCourses) {
+    for (const course of coursesWithProgress) {
       if (course && !seen.has(course._id.toString())) {
         seen.add(course._id.toString());
         uniqueCourses.push(course);

@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { FiSearch, FiGrid, FiBook, FiClock, FiStar, FiUsers, FiHeart } from 'react-icons/fi';
+import { FiSearch, FiGrid, FiBook, FiClock, FiStar, FiUsers, FiHeart, FiPlay, FiArrowRight, FiCheckCircle } from 'react-icons/fi';
 import { useSearchParams, Link } from 'react-router-dom';
 import { apiRequest } from '../../services/api';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../context/ToastContext';
+import Progressbar from '../../components/common/Progressbar';
 import './Browse.css';
 
 const Browse = () => {
@@ -12,6 +13,7 @@ const Browse = () => {
   const [searchParams] = useSearchParams();
   const [courses, setCourses] = useState([]);
   const [wishlist, setWishlist] = useState([]);
+  const [enrolledCourses, setEnrolledCourses] = useState([]);
   const [configCategories, setConfigCategories] = useState(['All']);
   const [configLevels, setConfigLevels] = useState(['All']);
   const [loading, setLoading] = useState(true);
@@ -39,7 +41,20 @@ const Browse = () => {
         }
       }
     };
+    const fetchEnrolled = async () => {
+      if (user && user.role === 'student') {
+        try {
+          const res = await apiRequest('/courses/student/enrolled-courses');
+          if (res.success) {
+            setEnrolledCourses(res.data);
+          }
+        } catch (error) {
+          console.error("Failed to fetch enrolled courses");
+        }
+      }
+    };
     fetchWishlist();
+    fetchEnrolled();
   }, [user]);
 
   const handleWishlistToggle = async (e, courseId) => {
@@ -235,15 +250,25 @@ const Browse = () => {
       ) : courses.length > 0 ? (
         <div className="browse-grid">
           {courses.map((course) => {
+            const enrollment = enrolledCourses.find(e => e._id === course.id);
+            const isEnrolled = !!enrollment;
             const isWishlisted = wishlist.includes(course.id);
+            const linkPath = isEnrolled ? `/player/${course.id}` : `/course/${course.id}`;
+            const isComplete = isEnrolled && enrollment.progressPercentage === 100;
+
             return (
               <div key={course.id} className="browse-card" style={{ position: 'relative' }}>
-                <Link to={`/course/${course.id}`} style={{ display: 'block', textDecoration: 'none', color: 'inherit' }}>
+                <Link to={linkPath} style={{ display: 'block', textDecoration: 'none', color: 'inherit' }}>
                   <div className="browse-card-image">
                     <img
                       src={course.thumbnail || `https://picsum.photos/seed/${course.id}/800/450`}
                       alt={course.title}
                     />
+                    {isComplete && (
+                      <div className="course-card-completed-badge">
+                        <FiCheckCircle size={14} /> Completed
+                      </div>
+                    )}
                   </div>
                   <div className="browse-card-body">
                     <span className="browse-card-tag">{course.category || 'Course'}</span>
@@ -251,18 +276,44 @@ const Browse = () => {
                     <p className="browse-card-instructor">
                       <FiUsers size={14} /> {course.instructor || 'Instructor'}
                     </p>
-                    {course.rating && (
+                    
+                    {!isEnrolled && course.rating && (
                       <p className="browse-card-rating">
                         <FiStar fill="#b4690e" color="#b4690e" /> {course.rating} <span>({course.reviewCount || 0} reviews)</span>
                       </p>
                     )}
+
                     <div className="browse-card-footer">
-                      {course.price === 0 || course.price === '0' ? (
-                        <span className="browse-card-price free">Free</span>
+                      {isEnrolled ? (
+                        <div style={{ width: '100%' }}>
+                          <div className="course-card-progress-auth">
+                            <div className="progress-track-auth">
+                              <div 
+                                className="progress-fill-auth" 
+                                style={{ width: `${enrollment.progressPercentage}%` }}
+                              />
+                            </div>
+                            <span className="progress-label-auth">{enrollment.progressPercentage}% Complete</span>
+                          </div>
+                          
+                          <button className="course-card-action-auth">
+                            {isComplete ? (
+                              <>Review Course <FiArrowRight size={14} /></>
+                            ) : (
+                              <>Continue Learning <FiPlay size={14} /></>
+                            )}
+                          </button>
+                        </div>
                       ) : (
-                        <span className="browse-card-price">₹{course.price}</span>
+                        <>
+                          {course.price === 0 || course.price === '0' ? (
+                            <span className="browse-card-price free">Free</span>
+                          ) : (
+                            <span className="browse-card-price">₹{course.price}</span>
+                          )}
+                          <span className="browse-card-level">{course.level || 'Beginner'}</span>
+                        </>
                       )}
-                      <span className="browse-card-level">{course.level || 'Beginner'}</span>
                     </div>
                   </div>
                 </Link>

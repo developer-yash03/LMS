@@ -1,14 +1,16 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { isValidEmail } from '../../utils/authValidation';
+import { isValidEmail, getDashboardRoute } from '../../utils/authValidation';
 import { apiRequest } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
+import { useAuth } from '../../hooks/useAuth';
 import { FiUser, FiMail, FiLock, FiEye, FiEyeOff } from 'react-icons/fi';
 import './Auth.css';
 
 const SignUp = () => {
   const navigate = useNavigate();
   const { showToast } = useToast();
+  const { login } = useAuth();
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -35,7 +37,7 @@ const SignUp = () => {
 
     setLoading(true);
     try {
-      await apiRequest('/signup', 'POST', {
+      const data = await apiRequest('/signup', 'POST', {
           name: trimmedName,
           email: trimmedEmail,
           password,
@@ -43,8 +45,24 @@ const SignUp = () => {
       });
 
       setLoading(false);
-      showToast('OTP sent to your email. Please verify to continue.', 'success');
-      navigate('/verify-otp', { state: { email: trimmedEmail } });
+
+      if (data.token) {
+        // Admin or auto-verified user
+        const authUser = {
+          id: data.user._id,
+          name: data.user.name,
+          email: data.user.email,
+          role: String(data.user.role).toLowerCase(),
+          token: data.token
+        };
+        login(authUser);
+        showToast('Account created successfully!', 'success');
+        navigate(getDashboardRoute(authUser.role));
+      } else {
+        // Student/Instructor requiring OTP
+        showToast('OTP sent to your email. Please verify to continue.', 'success');
+        navigate('/verify-otp', { state: { email: trimmedEmail } });
+      }
     } catch (err) {
       setLoading(false);
       showToast(err.message || 'Signup failed', 'error');
