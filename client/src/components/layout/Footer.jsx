@@ -16,10 +16,10 @@ const Footer = () => (
     <div style={{ width: '100%' }}>
       <h3 style={{ 
         fontFamily: "'Georgia', serif", 
-        fontSize: '1rem', 
+        fontSize: '1.2rem', 
         color: '#2e2117', 
-        margin: '0 0 0.5rem 0',
-        lineHeight: '0.1'
+        margin: '0.5rem 0 0.5rem 0',
+        lineHeight: '0.3'
       }}>
         ScholarHub
       </h3>

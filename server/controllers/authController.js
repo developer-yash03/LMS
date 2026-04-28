@@ -10,7 +10,7 @@ const generateOtp = () => {
 // Generate JWT Token
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
-    expiresIn: "30d",
+    expiresIn: "1h",
   });
 };
 
@@ -20,17 +20,25 @@ const generateToken = (id) => {
 const login = async (req, res) => {
   try {
     const { email, password } = req.body;
+    const normalizedEmail = String(email || "").trim().toLowerCase();
 
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email: normalizedEmail });
 
     if (!user) {
       return res.status(401).json({ success: false, message: "Invalid email or password" });
     }
 
-    if (!user.isVerified) {
+    if (!user.isVerified && user.role !== "admin") {
       return res.status(401).json({ 
         success: false, 
         message: "Your email is not verified. Please verify your email before logging in." 
+      });
+    }
+
+    if (user.isSuspended) {
+      return res.status(403).json({
+        success: false,
+        message: "Your account is temporarily suspended. Please contact support."
       });
     }
 
@@ -59,6 +67,9 @@ const login = async (req, res) => {
 const getMe = async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select("-password");
+    if (user && user.isSuspended) {
+      return res.status(403).json({ success: false, message: "Your account is temporarily suspended." });
+    }
     res.status(200).json({
       success: true,
       data: user,
@@ -163,9 +174,42 @@ const verifyOtp = async (req, res) => {
   }
 };
 
+const resetPassword = async (req, res) => {
+  try {
+    const { email, newPassword } = req.body;
+    const normalizedEmail = String(email || "").trim().toLowerCase();
+
+    if (!normalizedEmail || !newPassword) {
+      return res.status(400).json({ message: "Email and new password are required" });
+    }
+
+    if (newPassword.length < 8) {
+      return res.status(400).json({ message: "Password must be at least 8 characters long" });
+    }
+
+    const user = await User.findOne({ email: normalizedEmail });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+    await User.updateOne(
+      { email: normalizedEmail },
+      { $set: { password: hashedPassword } }
+    );
+
+    res.json({ success: true, message: "Password reset successfully" });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 module.exports = {
   login,
   getMe,
   sendOtp,
   verifyOtp,
+  resetPassword,
 };

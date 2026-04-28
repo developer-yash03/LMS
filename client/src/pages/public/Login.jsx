@@ -5,10 +5,27 @@ import { isValidEmail } from '../../utils/authValidation';
 import { FiEye, FiEyeOff, FiMail, FiLock } from 'react-icons/fi';
 import { FcGoogle } from 'react-icons/fc';
 import { SiApple } from 'react-icons/si'; // Adding some variety for social icons
+import { useToast } from '../../context/ToastContext';
 import './Auth.css';
 
 const Login = () => {
   const { handleLogin } = useAuthActions();
+  const { showToast } = useToast();
+
+  const toastShown = React.useRef(false);
+
+  React.useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (!toastShown.current) {
+      if (params.get('error') === 'suspended') {
+        showToast('Your account has been temporarily suspended. Please contact support.', 'error');
+        toastShown.current = true;
+      } else if (params.get('error') === 'expired') {
+        showToast('Your session has expired. Please log in again.', 'info');
+        toastShown.current = true;
+      }
+    }
+  }, [showToast]);
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');

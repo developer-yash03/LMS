@@ -5,12 +5,15 @@ import {
   FiClock,
   FiChevronDown,
   FiChevronRight,
+  FiDownload,
+  FiUploadCloud,
+  FiLoader,
 } from 'react-icons/fi';
 import { useParams } from 'react-router-dom';
 import { useToast } from '../../context/ToastContext';
 import BackButton from '../../components/common/BackButton';
 import Progressbar from '../../components/common/Progressbar';
-import { apiRequest } from '../../services/api';
+import { apiRequest, uploadMedia } from '../../services/api';
 
 const Player = () => {
   const { id } = useParams();
@@ -23,6 +26,8 @@ const Player = () => {
   const [progress, setProgress] = useState(0);
   const [activeTopic, setActiveTopic] = useState({ modIndex: 0, topicIndex: 0 });
   const [collapsedModules, setCollapsedModules] = useState({});
+  const [submissionStatus, setSubmissionStatus] = useState(null);
+  const [isUploadingAssignment, setIsUploadingAssignment] = useState(false);
 
   useEffect(() => {
     const fetchPlayerData = async () => {
@@ -59,6 +64,19 @@ const Player = () => {
 
   const currentModule = modules[activeTopic.modIndex] || null;
   const currentTopic = currentModule?.topics?.[activeTopic.topicIndex] || null;
+
+  useEffect(() => {
+    if (!currentTopic || !course) return;
+    const fetchSubmission = async () => {
+      try {
+        const res = await apiRequest(`/courses/${course._id}/topic/${currentTopic._id}/submission`);
+        setSubmissionStatus(res?.data || null);
+      } catch (err) {
+        setSubmissionStatus(null);
+      }
+    };
+    fetchSubmission();
+  }, [currentTopic, course]);
 
   const totalTopics = useMemo(() => {
     return modules.reduce((sum, mod) => sum + (mod.topics || []).length, 0);
@@ -111,6 +129,20 @@ const Player = () => {
     );
   }
 
+  const getEmbedUrl = (url) => {
+    if (!url) return null;
+    const ytRegex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i;
+    const ytMatch = url.match(ytRegex);
+    if (ytMatch && ytMatch[1]) {
+      return `https://www.youtube.com/embed/${ytMatch[1]}`;
+    }
+    return url;
+  };
+
+  const videoUrl = currentTopic?.videoUrl;
+  const embedUrl = getEmbedUrl(videoUrl);
+  const isYoutube = embedUrl?.includes('youtube.com/embed');
+
   return (
     <section className="page-container">
       <BackButton to="/my-learning" label="Back to My Learning" />
@@ -124,7 +156,7 @@ const Player = () => {
             marginBottom: '0.5rem',
           }}
         >
-          <h3 style={{ margin: 0, fontSize: '1.125rem' }}>{course.title}</h3>
+          <h3 style={{ margin: 0, fontSize: '1.125rem' }}>{course?.title}</h3>
           <span
             style={{
               fontSize: '0.85rem',
@@ -143,7 +175,33 @@ const Player = () => {
           {currentTopic ? (
             <>
               <div className="player-video-container">
-                <FiPlayCircle style={{ opacity: 0.8 }} />
+                {videoUrl ? (
+                  isYoutube ? (
+                    <iframe
+                      width="100%"
+                      height="100%"
+                      src={embedUrl}
+                      title="YouTube video player"
+                      frameBorder="0"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                      allowFullScreen
+                      style={{ borderRadius: '12px' }}
+                    ></iframe>
+                  ) : (
+                    <video 
+                      src={videoUrl} 
+                      controls 
+                      width="100%" 
+                      height="100%" 
+                      style={{ borderRadius: '12px', background: '#000' }}
+                    />
+                  )
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
+                    <FiPlayCircle size={48} style={{ opacity: 0.3 }} />
+                    <p>No video content</p>
+                  </div>
+                )}
               </div>
               <h2 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>{currentTopic.title}</h2>
               <p style={{ color: 'var(--text-muted)', marginBottom: '1rem' }}>
@@ -157,6 +215,64 @@ const Player = () => {
                     Open Video URL
                   </a>
                 </p>
+              )}
+
+              {currentTopic.assignmentUrl && (
+                <div style={{ marginTop: '2rem', padding: '1.5rem', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                  <h3 style={{ fontSize: '1.1rem', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <FiDownload /> Assignment Materials
+                  </h3>
+                  <a href={currentTopic.assignmentUrl} target="_blank" rel="noreferrer" className="btn btn-soft" style={{ marginBottom: '1.5rem', display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <FiDownload /> Download Assignment
+                  </a>
+
+                  <h3 style={{ fontSize: '1.1rem', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <FiUploadCloud /> Submit Your Work
+                  </h3>
+                  
+                  {submissionStatus ? (
+                    <div style={{ padding: '1rem', background: '#dcfce7', borderRadius: '6px', color: '#166534' }}>
+                      <p style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: '500' }}>
+                        <FiCheckCircle /> Assignment submitted on {new Date(submissionStatus.submittedAt).toLocaleDateString()}
+                      </p>
+                      <a href={submissionStatus.fileUrl} target="_blank" rel="noreferrer" style={{ display: 'inline-block', marginTop: '0.5rem', color: '#15803d', textDecoration: 'underline' }}>
+                        View your submission
+                      </a>
+                    </div>
+                  ) : (
+                    <div>
+                      <input 
+                        type="file" 
+                        id="assignment-upload"
+                        style={{ display: 'none' }}
+                        disabled={isUploadingAssignment}
+                        onChange={async (e) => {
+                          const file = e.target.files[0];
+                          if (!file) return;
+                          setIsUploadingAssignment(true);
+                          try {
+                            const res = await uploadMedia(file);
+                            const submitRes = await apiRequest(`/courses/${course._id}/topic/${currentTopic._id}/submit`, 'POST', { fileUrl: res.url });
+                            setSubmissionStatus(submitRes.data);
+                            showToast('Assignment submitted successfully!');
+                            if (!isTopicComplete(currentTopic._id)) {
+                              markCurrentTopicComplete();
+                            }
+                          } catch (err) {
+                            showToast('Failed to upload assignment', 'error');
+                          } finally {
+                            setIsUploadingAssignment(false);
+                          }
+                        }}
+                      />
+                      <label htmlFor="assignment-upload" className="btn btn-primary" style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
+                        {isUploadingAssignment ? <FiLoader className="spin" /> : <FiUploadCloud />} 
+                        {isUploadingAssignment ? 'Uploading to cloud...' : 'Upload Submission'}
+                      </label>
+                      <p style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '0.5rem' }}>Accepts PDF, DOCX, ZIP files</p>
+                    </div>
+                  )}
+                </div>
               )}
 
               <button

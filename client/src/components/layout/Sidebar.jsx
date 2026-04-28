@@ -47,8 +47,8 @@ const Sidebar = () => {
       { name: 'Earnings', path: '/instructor/earnings', icon: FiDollarSign },
     ],
     admin: [
-      { name: 'Admin Dashboard', path: '/admin/dashboard', icon: FiShield },
       { name: 'Users', path: '/admin/users', icon: FiUsers },
+      { name: 'Course Approvals', path: '/admin/approvals', icon: FiCheckSquare },
     ],
   };
 
@@ -62,7 +62,7 @@ const Sidebar = () => {
   const isActivePath = (path) => pathname === path || pathname.startsWith(path + '/');
 
   return (
-    <div className={`sidebar-wrapper ${normalizedRole === 'instructor' ? 'sidebar-instructor' : ''}`}>
+    <div className={`sidebar-wrapper ${['instructor', 'admin'].includes(normalizedRole) ? 'sidebar-instructor' : ''}`}>
       {/* Role label */}
       <span className="sidebar-role">
         {roleLabel[normalizedRole] || `${normalizedRole} Portal`}

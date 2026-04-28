@@ -37,6 +37,7 @@ import InstructorEarnings from './pages/instructor/Earnings.jsx';
 // Admin Pages
 import AdminDash from './pages/admin/Dashboard.jsx';
 import AdminUsers from './pages/admin/Users.jsx';
+import AdminApprovals from './pages/admin/Approvals.jsx';
 
 // Auth Wrappers (Security)
 import Protected from './components/auth/Protected.jsx';
@@ -74,7 +75,8 @@ function App() {
   const mainScrollRef = useRef(null);
 
   const dashboardPrefixes = ['/my-learning', '/player/', '/history', '/instructor', '/admin', '/student'];
-  const showSidebar = dashboardPrefixes.some((prefix) => pathname.startsWith(prefix));
+  const isBrowseAsStudent = pathname.startsWith('/browse') && user?.role === 'student';
+  const showSidebar = isBrowseAsStudent || dashboardPrefixes.some((prefix) => pathname.startsWith(prefix));
 
   return (
     <div className="app-shell">
@@ -244,6 +246,14 @@ function App() {
                 element={
                   <RoleGate role="admin">
                     <AdminUsers />
+                  </RoleGate>
+                }
+              />
+              <Route
+                path="/admin/approvals"
+                element={
+                  <RoleGate role="admin">
+                    <AdminApprovals />
                   </RoleGate>
                 }
               />

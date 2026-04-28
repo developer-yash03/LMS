@@ -3,6 +3,7 @@ const Module = require("../models/Module");
 const Topic = require("../models/Topic");
 const User = require("../models/User");
 const Progress = require("../models/Progress");
+const Submission = require("../models/Submission");
 const mongoose = require("mongoose");
 
 const COURSE_APPROVAL_STATUS = {
@@ -93,6 +94,24 @@ const removeCourseChildren = async (courseId) => {
 };
 
 // Get all courses with filters and search
+exports.getPublicFeaturedCourses = async (req, res) => {
+  try {
+    const courses = await Course.aggregate([
+      { $match: { $or: [{ approvalStatus: "approved" }, { approvalStatus: { $exists: false } }] } },
+      { $addFields: { studentsCount: { $size: { $ifNull: ["$enrolledStudents", []] } } } },
+      { $sort: { studentsCount: -1, rating: -1 } },
+      { $limit: 6 },
+      { $lookup: { from: "users", localField: "instructor", foreignField: "_id", as: "instructorDetails" } },
+      { $unwind: { path: "$instructorDetails", preserveNullAndEmptyArrays: true } },
+      { $addFields: { "instructor.name": "$instructorDetails.name", id: "$_id", _id: "$_id" } }
+    ]);
+    
+    res.status(200).json(courses);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
 exports.getAllCourses = async (req, res) => {
   try {
     const {
@@ -109,41 +128,47 @@ exports.getAllCourses = async (req, res) => {
     } = req.query;
 
     let filter = {
-      $or: [
-        { approvalStatus: COURSE_APPROVAL_STATUS.APPROVED },
-        { approvalStatus: { $exists: false } }
+      $and: [
+        {
+          $or: [
+            { approvalStatus: COURSE_APPROVAL_STATUS.APPROVED },
+            { approvalStatus: { $exists: false } }
+          ]
+        }
       ]
     };
 
     // Filter by category
     if (category) {
-      filter.category = category;
+      filter.$and.push({ category });
     }
 
     // Filter by instructor
     if (instructor) {
-      filter.instructor = instructor;
+      filter.$and.push({ instructor });
     }
 
     // Filter by price range
     if (priceRange) {
       const [minPrice, maxPrice] = priceRange.split("-").map(Number);
       if (minPrice !== undefined && maxPrice !== undefined) {
-        filter.price = { $gte: minPrice, $lte: maxPrice };
+        filter.$and.push({ price: { $gte: minPrice, $lte: maxPrice } });
       }
     }
 
     // Filter by level
     if (level) {
-      filter.level = level;
+      filter.$and.push({ level });
     }
 
     // Search by name or keyword
     if (search) {
-      filter.$or = [
-        { title: { $regex: search, $options: "i" } },
-        { description: { $regex: search, $options: "i" } }
-      ];
+      filter.$and.push({
+        $or: [
+          { title: { $regex: search, $options: "i" } },
+          { description: { $regex: search, $options: "i" } }
+        ]
+      });
     }
 
     const sortOptionsMap = {
@@ -202,10 +227,6 @@ exports.getCourseDetails = async (req, res) => {
     const course = await getPopulatedCourse(courseId);
 
     if (!course) {
-      return res.status(404).json({ success: false, message: "Course not found" });
-    }
-
-    if (!isCourseApproved(course)) {
       return res.status(404).json({ success: false, message: "Course not found" });
     }
 
@@ -293,9 +314,20 @@ exports.getEnrolledCourses = async (req, res) => {
       return res.status(404).json({ success: false, message: "User not found" });
     }
 
+    const coursesWithProgress = await Promise.all(
+      user.enrolledCourses.map(async (course) => {
+        if (!course) return null;
+        const progress = await Progress.findOne({ user: userId, course: course._id });
+        return {
+          ...course.toObject(),
+          progressPercentage: progress ? progress.progressPercentage : 0
+        };
+      })
+    );
+
     const uniqueCourses = [];
     const seen = new Set();
-    for (const course of user.enrolledCourses) {
+    for (const course of coursesWithProgress) {
       if (course && !seen.has(course._id.toString())) {
         seen.add(course._id.toString());
         uniqueCourses.push(course);
@@ -324,11 +356,21 @@ exports.getCourseContent = async (req, res) => {
     // Check if student is enrolled
     const course = await Course.findById(courseId).populate(coursePopulateOptions);
 
-    if (course && !isCourseApproved(course)) {
+    if (!course) {
+      return res.status(404).json({ success: false, message: "Course not found" });
+    }
+
+    const isAdmin = req.user.role === "admin";
+    const isInstructor = String(course.instructor?._id || course.instructor) === String(userId);
+    const isEnrolled = course.enrolledStudents.some(id => String(id) === String(userId));
+
+    // Security: Only students need approval check, admins and the instructor can see pending courses
+    if (!isAdmin && !isInstructor && !isCourseApproved(course)) {
       return res.status(403).json({ success: false, message: "Course is not available yet" });
     }
 
-    if (!course || !course.enrolledStudents.includes(userId)) {
+    // Security: Allow access if enrolled, admin, or instructor of the course
+    if (!isEnrolled && !isAdmin && !isInstructor) {
       return res.status(403).json({ success: false, message: "Not enrolled in this course" });
     }
 
@@ -361,7 +403,21 @@ exports.markTopicComplete = async (req, res) => {
     let progress = await Progress.findOne({ user: userId, course: courseId });
 
     if (!progress) {
-      return res.status(404).json({ success: false, message: "Progress record not found" });
+      // Allow Admins and the course's Instructor to create progress as they view
+      const isAdmin = req.user.role === "admin";
+      const courseCheck = await Course.findById(courseId);
+      const isInstructor = courseCheck && String(courseCheck.instructor?._id || courseCheck.instructor) === String(userId);
+
+      if (isAdmin || isInstructor) {
+        progress = new Progress({
+          user: userId,
+          course: courseId,
+          completedTopics: [],
+          progressPercentage: 0
+        });
+      } else {
+        return res.status(404).json({ success: false, message: "Progress record not found. Please enroll first." });
+      }
     }
 
     if (!progress.completedTopics.includes(topicId)) {
@@ -402,6 +458,24 @@ exports.getCourseProgress = async (req, res) => {
     const progress = await Progress.findOne({ user: userId, course: courseId }).populate("completedTopics");
 
     if (!progress) {
+      // For Admins and the course's Instructor, return a default empty progress 
+      // instead of 404 so they can still use the player.
+      const isAdmin = req.user.role === "admin";
+      const course = await Course.findById(courseId);
+      const isInstructor = course && String(course.instructor?._id || course.instructor) === String(userId);
+
+      if (isAdmin || isInstructor) {
+        return res.status(200).json({
+          success: true,
+          data: {
+            user: userId,
+            course: courseId,
+            completedTopics: [],
+            progressPercentage: 0
+          }
+        });
+      }
+
       return res.status(404).json({ success: false, message: "No progress found" });
     }
 
@@ -409,6 +483,51 @@ exports.getCourseProgress = async (req, res) => {
       success: true,
       data: progress
     });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+// Submit an assignment for a topic
+exports.submitAssignment = async (req, res) => {
+  try {
+    const { courseId, topicId } = req.params;
+    const { fileUrl } = req.body;
+    const userId = req.user._id;
+
+    if (!fileUrl) {
+      return res.status(400).json({ success: false, message: "File URL is required" });
+    }
+
+    if (!isValidObjectId(courseId) || !isValidObjectId(topicId)) {
+      return res.status(400).json({ success: false, message: "Invalid ID" });
+    }
+
+    // Upsert submission (if they submit again, just overwrite)
+    const submission = await Submission.findOneAndUpdate(
+      { user: userId, topic: topicId, course: courseId },
+      { fileUrl, submittedAt: Date.now() },
+      { new: true, upsert: true }
+    );
+
+    res.status(200).json({ success: true, message: "Assignment submitted successfully", data: submission });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+// Get a student's submission for a topic
+exports.getAssignmentSubmission = async (req, res) => {
+  try {
+    const { topicId } = req.params;
+    const userId = req.user._id;
+
+    if (!isValidObjectId(topicId)) {
+      return res.status(400).json({ success: false, message: "Invalid topic ID" });
+    }
+
+    const submission = await Submission.findOne({ user: userId, topic: topicId });
+    res.status(200).json({ success: true, data: submission });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }

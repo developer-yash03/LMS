@@ -18,7 +18,7 @@ export const inferRoleFromEmail = (email = '') => {
 
 export const dashboardRouteByRole = {
   admin: '/admin/dashboard',
-  instructor: '/instructor/dashboard',
+  instructor: '/instructor/courses',
   student: '/my-learning',
 };
 

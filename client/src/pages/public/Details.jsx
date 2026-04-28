@@ -269,19 +269,47 @@ const Details = () => {
               {course.price === 0 ? 'Free' : `₹${course.price}`}
             </h3>
 
-            <button
-              className="btn btn-primary"
-              style={{ width: '100%', marginBottom: '1rem', padding: '1rem' }}
-              onClick={handleEnroll}
-            >
-              {enrolled ? (
-                <>
-                  <FiPlay /> Continue Learning ({progress}%)
-                </>
+            {user?.role === 'admin' ? (
+              <button
+                className="btn btn-primary"
+                style={{ width: '100%', marginBottom: '1rem', padding: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+                onClick={() => navigate(`/player/${course._id}`)}
+              >
+                <FiPlay /> View Course
+              </button>
+            ) : user?.role === 'instructor' ? (
+              String(course.instructor?._id || course.instructor) === String(user.id || user._id) ? (
+                <button
+                  className="btn btn-primary"
+                  style={{ width: '100%', marginBottom: '1rem', padding: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+                  onClick={() => navigate(`/player/${course._id}`)}
+                >
+                  <FiPlay /> View Course
+                </button>
               ) : (
-                <>Enroll for {course.price === 0 ? 'Free' : `₹${course.price}`}</>
-              )}
-            </button>
+                <button
+                  className="btn btn-primary"
+                  style={{ width: '100%', marginBottom: '1rem', padding: '1rem', opacity: 0.7, cursor: 'not-allowed' }}
+                  disabled
+                >
+                  Available for Students
+                </button>
+              )
+            ) : (
+              <button
+                className="btn btn-primary"
+                style={{ width: '100%', marginBottom: '1rem', padding: '1rem' }}
+                onClick={handleEnroll}
+              >
+                {enrolled ? (
+                  <>
+                    <FiPlay /> Continue Learning ({progress}%)
+                  </>
+                ) : (
+                  <>Enroll for {course.price === 0 ? 'Free' : `₹${course.price}`}</>
+                )}
+              </button>
+            )}
 
             <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', textAlign: 'center', margin: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem' }}>
               <FiShield /> Secure access with your verified account

@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { FiSearch, FiGrid, FiBook, FiClock, FiStar, FiUsers, FiHeart } from 'react-icons/fi';
+import { FiSearch, FiGrid, FiBook, FiClock, FiStar, FiUsers, FiHeart, FiPlay, FiArrowRight, FiCheckCircle } from 'react-icons/fi';
 import { useSearchParams, Link } from 'react-router-dom';
 import { apiRequest } from '../../services/api';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../context/ToastContext';
+import Progressbar from '../../components/common/Progressbar';
 import './Browse.css';
 
 const Browse = () => {
@@ -12,6 +13,9 @@ const Browse = () => {
   const [searchParams] = useSearchParams();
   const [courses, setCourses] = useState([]);
   const [wishlist, setWishlist] = useState([]);
+  const [enrolledCourses, setEnrolledCourses] = useState([]);
+  const [configCategories, setConfigCategories] = useState(['All']);
+  const [configLevels, setConfigLevels] = useState(['All']);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -37,7 +41,20 @@ const Browse = () => {
         }
       }
     };
+    const fetchEnrolled = async () => {
+      if (user && user.role === 'student') {
+        try {
+          const res = await apiRequest('/courses/student/enrolled-courses');
+          if (res.success) {
+            setEnrolledCourses(res.data);
+          }
+        } catch (error) {
+          console.error("Failed to fetch enrolled courses");
+        }
+      }
+    };
     fetchWishlist();
+    fetchEnrolled();
   }, [user]);
 
   const handleWishlistToggle = async (e, courseId) => {
@@ -59,17 +76,25 @@ const Browse = () => {
     }
   };
 
-  const categoryOptions = [
-    'All',
-    'Web Development',
-    'Mobile Development',
-    'Data Science',
-    'Cloud Computing',
-    'DevOps',
-    'Other',
-  ];
-
   useEffect(() => {
+    const fetchConfig = async () => {
+      try {
+        const catRes = await apiRequest('/config/categories', 'GET');
+        if (catRes && catRes.data) {
+          setConfigCategories(['All', ...catRes.data.map(c => c.name)]);
+        }
+        const lvlRes = await apiRequest('/config/levels', 'GET');
+        if (lvlRes && lvlRes.data) {
+          setConfigLevels(['All', ...lvlRes.data.map(l => l.name)]);
+        }
+      } catch (err) {
+        console.error("Failed to load config", err);
+        // Fallbacks
+        setConfigCategories(['All', 'Web Development', 'Mobile Development', 'Data Science', 'Cloud Computing', 'DevOps', 'Other']);
+        setConfigLevels(['All', 'Beginner', 'Intermediate', 'Advanced']);
+      }
+    };
+    fetchConfig();
     setSearchTerm(searchParams.get('search') || '');
   }, [searchParams]);
 
@@ -166,7 +191,7 @@ const Browse = () => {
         </div>
 
         <select className="browse-select" value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}>
-          {categoryOptions.map((category) => (
+          {configCategories.map((category) => (
             <option key={category} value={category}>
               {category === 'All' ? 'All Categories' : category}
             </option>
@@ -174,10 +199,11 @@ const Browse = () => {
         </select>
 
         <select className="browse-select" value={levelFilter} onChange={(e) => setLevelFilter(e.target.value)}>
-          <option value="All">All Levels</option>
-          <option value="Beginner">Beginner</option>
-          <option value="Intermediate">Intermediate</option>
-          <option value="Advanced">Advanced</option>
+          {configLevels.map((level) => (
+            <option key={level} value={level}>
+              {level === 'All' ? 'All Levels' : level}
+            </option>
+          ))}
         </select>
 
         <select className="browse-select" value={priceFilter} onChange={(e) => setPriceFilter(e.target.value)}>
@@ -224,15 +250,29 @@ const Browse = () => {
       ) : courses.length > 0 ? (
         <div className="browse-grid">
           {courses.map((course) => {
-            const isWishlisted = wishlist.includes(course.id);
+            const enrollment = enrolledCourses.find(e => e._id === course.id);
+            const isEnrolled = !!enrollment;
+            const isAdmin = user?.role === 'admin';
+            const isInstructor = user?.role === 'instructor';
+            const isOwner = isInstructor && (String(course.instructor?._id || course.instructor) === String(user?.id || user?._id));
+            
+            const canViewDirectly = isEnrolled || isAdmin || isOwner;
+            const linkPath = canViewDirectly ? `/player/${course.id}` : `/course/${course.id}`;
+            const isComplete = isEnrolled && enrollment.progressPercentage === 100;
+
             return (
               <div key={course.id} className="browse-card" style={{ position: 'relative' }}>
-                <Link to={`/course/${course.id}`} style={{ display: 'block', textDecoration: 'none', color: 'inherit' }}>
+                <Link to={linkPath} style={{ display: 'block', textDecoration: 'none', color: 'inherit' }}>
                   <div className="browse-card-image">
                     <img
                       src={course.thumbnail || `https://picsum.photos/seed/${course.id}/800/450`}
                       alt={course.title}
                     />
+                    {isComplete && (
+                      <div className="course-card-completed-badge">
+                        <FiCheckCircle size={14} /> Completed
+                      </div>
+                    )}
                   </div>
                   <div className="browse-card-body">
                     <span className="browse-card-tag">{course.category || 'Course'}</span>
@@ -240,18 +280,54 @@ const Browse = () => {
                     <p className="browse-card-instructor">
                       <FiUsers size={14} /> {course.instructor || 'Instructor'}
                     </p>
-                    {course.rating && (
+                    
+                    {!canViewDirectly && course.rating && (
                       <p className="browse-card-rating">
                         <FiStar fill="#b4690e" color="#b4690e" /> {course.rating} <span>({course.reviewCount || 0} reviews)</span>
                       </p>
                     )}
+
                     <div className="browse-card-footer">
-                      {course.price === 0 || course.price === '0' ? (
-                        <span className="browse-card-price free">Free</span>
+                      {canViewDirectly ? (
+                        <div style={{ width: '100%' }}>
+                          {isEnrolled && (
+                            <div className="course-card-progress-auth">
+                              <div className="progress-track-auth">
+                                <div 
+                                  className="progress-fill-auth" 
+                                  style={{ width: `${enrollment.progressPercentage}%` }}
+                                />
+                              </div>
+                              <span className="progress-label-auth">{enrollment.progressPercentage}% Complete</span>
+                            </div>
+                          )}
+                          
+                          <button className="course-card-action-auth">
+                            {isComplete ? (
+                              <>Review Course <FiArrowRight size={14} /></>
+                            ) : isAdmin || isOwner ? (
+                              <>View Course <FiPlay size={14} /></>
+                            ) : (
+                              <>Continue Learning <FiPlay size={14} /></>
+                            )}
+                          </button>
+                        </div>
+                      ) : isInstructor && !isOwner ? (
+                        <div style={{ width: '100%' }}>
+                           <button className="course-card-action-auth" style={{ opacity: 0.7, cursor: 'not-allowed', width: '100%' }} disabled>
+                              Students Only
+                           </button>
+                        </div>
                       ) : (
-                        <span className="browse-card-price">₹{course.price}</span>
+                        <>
+                          {course.price === 0 || course.price === '0' ? (
+                            <span className="browse-card-price free">Free</span>
+                          ) : (
+                            <span className="browse-card-price">₹{course.price}</span>
+                          )}
+                          <span className="browse-card-level">{course.level || 'Beginner'}</span>
+                        </>
                       )}
-                      <span className="browse-card-level">{course.level || 'Beginner'}</span>
                     </div>
                   </div>
                 </Link>

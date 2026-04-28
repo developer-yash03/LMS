@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { FiUsers, FiStar } from 'react-icons/fi';
 import { apiRequest } from '../../services/api';
 import './Home.css';
+import './Browse.css';
 
 const Home = () => {
   const navigate = useNavigate();
@@ -12,7 +14,7 @@ const Home = () => {
     const fetchFeatured = async () => {
       try {
         const data = await apiRequest('/courses/public', 'GET');
-        setFeaturedCourses(data.slice(0, 3)); // Showing top 3 for the bento-style layout
+        setFeaturedCourses(data.slice(0, 6)); // Show top 6 featured courses
       } catch (err) {
         console.error("Failed to fetch featured courses:", err);
       } finally {
@@ -28,7 +30,7 @@ const Home = () => {
       <section className="hero-split">
         <div className="hero-container">
           <div className="hero-text-side">
-            <span className="hero-label">ESTABLISHED 2024</span>
+            <span className="hero-label">ESTABLISHED 2026</span>
             <h1 className="hero-main-title">
               Elevate Your Mind in a Space Designed for <span className="highlight">Deep Learning.</span>
             </h1>
@@ -37,6 +39,7 @@ const Home = () => {
             </p>
             <div className="hero-btns">
               <Link to="/signup" className="btn-primary-brown">Get Started</Link>
+              <Link to="/browse" className="btn-secondary">Explore Courses</Link>
             </div>
             <div className="hero-social-proof">
               <div className="student-avatars">
@@ -68,42 +71,40 @@ const Home = () => {
         {loading ? (
           <div className="loading-state">Curating courses...</div>
         ) : (
-          <div className="disciplines-grid">
+          <div className="home-featured-grid">
             {featuredCourses.length > 0 ? (
-              <>
-                {/* Main Large Card */}
-                <Link to={`/course/${featuredCourses[0]._id}`} className="discipline-card-large">
-                  <img src={featuredCourses[0].thumbnail || 'https://images.unsplash.com/photo-1517673132405-a56a62b18caf?auto=format&fit=crop&q=80&w=800'} alt={featuredCourses[0].title} />
-                  <div className="card-overlay">
-                    <span className="card-tag">CERTIFICATE PROGRAM</span>
-                    <h3>{featuredCourses[0].title}</h3>
-                    <p>{featuredCourses[0].instructor?.name || 'Academic Expert'}</p>
-                    <div className="card-meta">
-                      <span>🕒 12 Weeks</span>
-                      <span>★ 4.9 (1.2k reviews)</span>
+              featuredCourses.map((course) => (
+                <div key={course._id || course.id} className="browse-card" style={{ position: 'relative' }}>
+                  <Link to={`/course/${course._id || course.id}`} style={{ display: 'block', textDecoration: 'none', color: 'inherit' }}>
+                    <div className="browse-card-image">
+                      <img
+                        src={course.thumbnail || `https://picsum.photos/seed/${course._id || course.id}/800/450`}
+                        alt={course.title}
+                      />
                     </div>
-                  </div>
-                </Link>
-
-                {/* Right Side Column */}
-                <div className="disciplines-column">
-                  {featuredCourses.slice(1, 3).map((course, idx) => (
-                    <Link to={`/course/${course._id}`} key={course._id} className={`discipline-card-small ${idx === 0 ? 'dark' : 'light'}`}>
-                      <div className="card-info">
-                        <span className="card-tag">{course.category || 'ACADEMIC'}</span>
-                        <h3>{course.title}</h3>
-                        <p>{course.instructor?.name || 'Academic Expert'}</p>
-                        <span className="learn-more">Learn More ➔</span>
-                      </div>
-                      {idx === 0 && (
-                        <div className="card-visual">
-                          <img src={course.thumbnail || 'https://images.unsplash.com/photo-1507413245164-6160d8298b31?auto=format&fit=crop&q=80&w=300'} alt="Course icon" />
-                        </div>
+                    <div className="browse-card-body">
+                      <span className="browse-card-tag">{course.category || 'Course'}</span>
+                      <h3 className="browse-card-title">{course.title}</h3>
+                      <p className="browse-card-instructor">
+                        <FiUsers size={14} /> {course.instructor?.name || (typeof course.instructor === 'string' ? course.instructor : 'Instructor')}
+                      </p>
+                      {course.rating && (
+                        <p className="browse-card-rating">
+                          <FiStar fill="#b4690e" color="#b4690e" /> {course.rating} <span>({course.reviewCount || Math.floor(Math.random() * 2000 + 500).toLocaleString()} reviews)</span>
+                        </p>
                       )}
-                    </Link>
-                  ))}
+                      <div className="browse-card-footer">
+                        {course.price === 0 || course.price === '0' ? (
+                          <span className="browse-card-price free">Free</span>
+                        ) : (
+                          <span className="browse-card-price">₹{course.price}</span>
+                        )}
+                        <span className="browse-card-level">{course.level || 'Beginner'}</span>
+                      </div>
+                    </div>
+                  </Link>
                 </div>
-              </>
+              ))
             ) : (
               <p className="empty-msg">No courses featured at the moment.</p>
             )}

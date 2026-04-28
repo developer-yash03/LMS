@@ -8,7 +8,6 @@ const courseSchema = new mongoose.Schema({
   description: String,
   category: {
     type: String,
-    enum: ["Web Development", "Mobile Development", "Data Science", "Cloud Computing", "DevOps", "Other"],
     required: true
   },
   instructor: {
@@ -23,7 +22,6 @@ const courseSchema = new mongoose.Schema({
   },
   level: {
     type: String,
-    enum: ["Beginner", "Intermediate", "Advanced"],
     default: "Beginner"
   },
   duration: Number, // in hours
@@ -74,4 +72,17 @@ const courseSchema = new mongoose.Schema({
 
 // Index for search and filtering
 courseSchema.index({ title: "text", description: "text" });
+
+// Browse page: filter by category + sort by createdAt
+courseSchema.index({ category: 1, createdAt: -1 });
+
+// Browse page: filter/sort by price
+courseSchema.index({ price: 1 });
+
+// Instructor dashboard: find courses by instructor
+courseSchema.index({ instructor: 1, createdAt: -1 });
+
+// Admin: filter by approval status
+courseSchema.index({ approvalStatus: 1 });
+
 module.exports = mongoose.model("Course", courseSchema);
