@@ -12,10 +12,13 @@ const Login = () => {
   const { handleLogin } = useAuthActions();
   const { showToast } = useToast();
 
+  const toastShown = React.useRef(false);
+
   React.useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    if (params.get('error') === 'suspended') {
+    if (params.get('error') === 'suspended' && !toastShown.current) {
       showToast('Your account has been temporarily suspended. Please contact support.', 'error');
+      toastShown.current = true;
     }
   }, [showToast]);
 

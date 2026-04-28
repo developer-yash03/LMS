@@ -252,8 +252,12 @@ const Browse = () => {
           {courses.map((course) => {
             const enrollment = enrolledCourses.find(e => e._id === course.id);
             const isEnrolled = !!enrollment;
-            const isWishlisted = wishlist.includes(course.id);
-            const linkPath = isEnrolled ? `/player/${course.id}` : `/course/${course.id}`;
+            const isAdmin = user?.role === 'admin';
+            const isInstructor = user?.role === 'instructor';
+            const isOwner = isInstructor && (String(course.instructor?._id || course.instructor) === String(user?.id || user?._id));
+            
+            const canViewDirectly = isEnrolled || isAdmin || isOwner;
+            const linkPath = canViewDirectly ? `/player/${course.id}` : `/course/${course.id}`;
             const isComplete = isEnrolled && enrollment.progressPercentage === 100;
 
             return (
@@ -277,32 +281,42 @@ const Browse = () => {
                       <FiUsers size={14} /> {course.instructor || 'Instructor'}
                     </p>
                     
-                    {!isEnrolled && course.rating && (
+                    {!canViewDirectly && course.rating && (
                       <p className="browse-card-rating">
                         <FiStar fill="#b4690e" color="#b4690e" /> {course.rating} <span>({course.reviewCount || 0} reviews)</span>
                       </p>
                     )}
 
                     <div className="browse-card-footer">
-                      {isEnrolled ? (
+                      {canViewDirectly ? (
                         <div style={{ width: '100%' }}>
-                          <div className="course-card-progress-auth">
-                            <div className="progress-track-auth">
-                              <div 
-                                className="progress-fill-auth" 
-                                style={{ width: `${enrollment.progressPercentage}%` }}
-                              />
+                          {isEnrolled && (
+                            <div className="course-card-progress-auth">
+                              <div className="progress-track-auth">
+                                <div 
+                                  className="progress-fill-auth" 
+                                  style={{ width: `${enrollment.progressPercentage}%` }}
+                                />
+                              </div>
+                              <span className="progress-label-auth">{enrollment.progressPercentage}% Complete</span>
                             </div>
-                            <span className="progress-label-auth">{enrollment.progressPercentage}% Complete</span>
-                          </div>
+                          )}
                           
                           <button className="course-card-action-auth">
                             {isComplete ? (
                               <>Review Course <FiArrowRight size={14} /></>
+                            ) : isAdmin || isOwner ? (
+                              <>View Course <FiPlay size={14} /></>
                             ) : (
                               <>Continue Learning <FiPlay size={14} /></>
                             )}
                           </button>
+                        </div>
+                      ) : isInstructor && !isOwner ? (
+                        <div style={{ width: '100%' }}>
+                           <button className="course-card-action-auth" style={{ opacity: 0.7, cursor: 'not-allowed', width: '100%' }} disabled>
+                              Students Only
+                           </button>
                         </div>
                       ) : (
                         <>
