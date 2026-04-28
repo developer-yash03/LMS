@@ -40,6 +40,7 @@ app.use("/api/auth", require("./routes/auth"));
 app.use("/api/payment", require("./routes/paymentRoutes"));
 
 app.use("/api/courses", require("./routes/course"));
+app.use("/api/quizzes", require("./routes/quiz"));
 app.use("/api", require("./routes/test")); // LAST
 
 // Start server ONLY after DB connects
