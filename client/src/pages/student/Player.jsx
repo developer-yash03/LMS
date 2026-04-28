@@ -48,6 +48,7 @@ const Player = () => {
         ]);
 
         const content = contentResponse?.data || {};
+        console.log('Player Data Received:', content);
         console.log('Player Data:', content);
         setCourse(content.course || null);
         setModules(content.modules || []);
@@ -110,52 +111,49 @@ const Player = () => {
     }
 
     try {
-      const response = await apiRequest(
-        `/courses/${id}/topic/${currentTopic._id}/complete`,
-        'POST',
-        {}
-      );
-
-      const updatedCompleted = (response?.progress?.completedTopics || []).map((topic) =>
-        typeof topic === 'object' ? String(topic._id) : String(topic)
-      );
-
-      setCompletedTopicIds(updatedCompleted);
-      setProgress(response?.progress?.progressPercentage || 0);
-      showToast('Topic marked as completed');
+      const res = await apiRequest(`/courses/${id}/topic/${currentTopic._id}/complete`, 'POST');
+      if (res.success) {
+        setCompletedTopicIds((prev) => [...prev, String(currentTopic._id)]);
+        setProgress(res.data?.progressPercentage || progress);
+        showToast('Topic marked as complete!');
+      }
     } catch (error) {
-      showToast(error.message || 'Could not update progress', 'error');
+      showToast('Failed to mark topic as complete', 'error');
     }
   };
 
-  if (loading) return <p>Loading course content...</p>;
-
-  if (!course) {
+  if (loading) {
     return (
-      <section className="page-container">
-        <h3>Course content unavailable</h3>
-        <p>You might not be enrolled in this course yet.</p>
-      </section>
+      <div className="player-loading">
+        <FiLoader className="spin" size={32} />
+        <p>Initializing course content...</p>
+      </div>
     );
   }
 
-  const getEmbedUrl = (url) => {
-    if (!url) return null;
-    const ytRegex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i;
-    const ytMatch = url.match(ytRegex);
-    if (ytMatch && ytMatch[1]) {
-      return `https://www.youtube.com/embed/${ytMatch[1]}`;
-    }
-    return url;
-  };
+  if (!course) {
+    return (
+      <div className="player-error">
+        <p>Course not found or access denied.</p>
+        <BackButton />
+      </div>
+    );
+  }
 
   const videoUrl = currentTopic?.videoUrl;
-  const embedUrl = getEmbedUrl(videoUrl);
-  const isYoutube = embedUrl?.includes('youtube.com/embed');
+  const isYoutube = videoUrl?.includes('youtube.com') || videoUrl?.includes('youtu.be');
+  let embedUrl = '';
+  if (isYoutube) {
+    const videoId = videoUrl.includes('v=') ? videoUrl.split('v=')[1].split('&')[0] : videoUrl.split('/').pop().split('?')[0];
+    embedUrl = `https://www.youtube.com/embed/${videoId}`;
+  }
 
   return (
-    <section className="page-container">
-      <BackButton to="/my-learning" label="Back to My Learning" />
+    <section className="player-container">
+      <div className="player-header">
+        <BackButton />
+        <h2 className="player-title">Course Player</h2>
+      </div>
 
       <div style={{ marginBottom: '1.5rem' }}>
         <div
@@ -181,7 +179,7 @@ const Player = () => {
       </div>
 
       <div className="player-layout">
-        <div>
+        <div className="player-main">
           {currentTopic ? (
             <>
               <div className="player-video-container">
@@ -207,37 +205,22 @@ const Player = () => {
                     />
                   )
                 ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem', padding: '4rem' }}>
                     <FiPlayCircle size={48} style={{ opacity: 0.3 }} />
-                    <p>No video content</p>
+                    <p>No video content for this topic</p>
                   </div>
                 )}
               </div>
-              <h2 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>{currentTopic.title}</h2>
-              <p style={{ color: 'var(--text-muted)', marginBottom: '1rem' }}>
+              <h2 style={{ fontSize: '1.5rem', marginBottom: '0.5rem', marginTop: '1.5rem' }}>{currentTopic.title}</h2>
+              <p style={{ color: 'var(--text-muted)', marginBottom: '1.5rem', display: 'flex', alignItems: 'center' }}>
                 <FiClock style={{ marginRight: '0.35rem' }} />
                 Topic in module: {currentModule?.title}
               </p>
-
-              {currentTopic.videoUrl && (
-                <p style={{ marginBottom: '1rem' }}>
-                  <a href={currentTopic.videoUrl} target="_blank" rel="noreferrer">
-                    Open Video URL
-                  </a>
-                </p>
-              )}
 
               {currentTopic.assignmentUrl && (
                 <div style={{ marginTop: '2rem', padding: '1.5rem', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
                   <h3 style={{ fontSize: '1.1rem', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <FiDownload /> Assignment Materials
-                  </h3>
-                  <a href={currentTopic.assignmentUrl} target="_blank" rel="noreferrer" className="btn btn-soft" style={{ marginBottom: '1.5rem', display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <FiDownload /> Download Assignment
-                  </a>
-
-                  <h3 style={{ fontSize: '1.1rem', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <FiUploadCloud /> Submit Your Work
                   </h3>
                   
                   {submissionStatus ? (
@@ -287,6 +270,13 @@ const Player = () => {
                     </div>
                   ) : (
                     <div>
+                      <a href={currentTopic.assignmentUrl} target="_blank" rel="noreferrer" className="btn btn-soft" style={{ marginBottom: '1.5rem', display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <FiDownload /> Download Assignment
+                      </a>
+
+                      <h3 style={{ fontSize: '1.1rem', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <FiUploadCloud /> Submit Your Work
+                      </h3>
                       <input 
                         type="file" 
                         id="assignment-upload"
@@ -301,9 +291,6 @@ const Player = () => {
                             const submitRes = await apiRequest(`/courses/${course._id}/topic/${currentTopic._id}/submit`, 'POST', { fileUrl: res.url });
                             setSubmissionStatus(submitRes.data);
                             showToast('Assignment submitted successfully!');
-                            if (!isTopicComplete(currentTopic._id)) {
-                              markCurrentTopicComplete();
-                            }
                           } catch (err) {
                             showToast('Failed to upload assignment', 'error');
                           } finally {
@@ -374,92 +361,69 @@ const Player = () => {
               </button>
             </>
           ) : (
-            <p>Select a topic from the sidebar.</p>
+            <div style={{ padding: '4rem', textAlign: 'center' }}>
+              <FiGrid size={48} style={{ opacity: 0.1, marginBottom: '1rem' }} />
+              <p>Select a topic from the sidebar to begin learning.</p>
+            </div>
           )}
         </div>
 
         <aside className="player-sidebar">
-          <h3>Course Content</h3>
-          {modules.map((mod, modIndex) => {
-            const isCollapsed = collapsedModules[modIndex];
-            const moduleTopics = mod.topics || [];
-            const moduleCompleted = moduleTopics.filter((topic) => isTopicComplete(topic._id)).length;
+          <div className="sidebar-header-player">
+            <h3>Course Content</h3>
+          </div>
+          <div className="module-list-player">
+            {modules.map((mod, modIndex) => {
+              const isCollapsed = collapsedModules[modIndex];
+              const moduleTopics = mod.topics || [];
+              const moduleCompleted = moduleTopics.filter((topic) => isTopicComplete(topic._id)).length;
 
-            return (
-              <div key={mod._id || modIndex} className="module-accordion">
-                <button
-                  type="button"
-                  className="module-title"
-                  onClick={() => toggleModule(modIndex)}
-                  style={{
-                    width: '100%',
-                    background: 'none',
-                    border: 'none',
-                    textAlign: 'left',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.5rem',
-                    fontWeight: 600,
-                    fontSize: '1rem',
-                    padding: '0.25rem 0',
-                    color:
-                      moduleTopics.length > 0 && moduleCompleted === moduleTopics.length
-                        ? '#16A34A'
-                        : 'var(--text-dark)',
-                    fontFamily: 'var(--font-family)',
-                  }}
-                >
-                  {isCollapsed ? <FiChevronRight /> : <FiChevronDown />}
-                  <span style={{ flex: 1 }}>{mod.title}</span>
-                  <span
-                    style={{
-                      fontSize: '0.75rem',
-                      color: 'var(--text-muted)',
-                      fontWeight: 500,
-                    }}
+              return (
+                <div key={mod._id} className="module-item-player">
+                  <button
+                    className={`module-header-player ${isCollapsed ? 'collapsed' : ''}`}
+                    onClick={() => toggleModule(modIndex)}
                   >
-                    {moduleCompleted}/{moduleTopics.length}
-                  </span>
-                </button>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      {isCollapsed ? <FiChevronRight /> : <FiChevronDown />}
+                      <span className="module-title-player">{mod.title}</span>
+                    </div>
+                    <span className="module-badge-player">
+                      {moduleCompleted}/{moduleTopics.length}
+                    </span>
+                  </button>
 
-                {!isCollapsed && (
-                  <ul className="topic-list">
-                    {moduleTopics.map((topic, topicIndex) => {
-                      const isActive =
-                        activeTopic.modIndex === modIndex && activeTopic.topicIndex === topicIndex;
-                      const completed = isTopicComplete(topic._id);
+                  {!isCollapsed && (
+                    <ul className="topic-list-player">
+                      {moduleTopics.map((topic, topicIndex) => {
+                        const isActive = activeTopic.modIndex === modIndex && activeTopic.topicIndex === topicIndex;
+                        const isComplete = isTopicComplete(topic._id);
 
-                      return (
-                        <li key={topic._id || `${modIndex}-${topicIndex}`}>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setActiveTopic({ modIndex: modIndex, topicIndex: topicIndex })
-                            }
-                            className={`topic-item ${isActive ? 'active' : ''}`}
-                          >
-                            <span
-                              style={{
-                                color: completed
-                                  ? '#16A34A'
-                                  : isActive
-                                    ? 'var(--primary-blue)'
-                                    : 'var(--text-muted)',
-                              }}
+                        return (
+                          <li key={topic._id}>
+                            <button
+                              className={`topic-item-player ${isActive ? 'active' : ''}`}
+                              onClick={() => setActiveTopic({ modIndex, topicIndex })}
                             >
-                              {completed ? <FiCheckCircle /> : <FiPlayCircle />}
-                            </span>
-                            <span style={{ flex: 1, textAlign: 'left' }}>{topic.title}</span>
-                          </button>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                )}
-              </div>
-            );
-          })}
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flex: 1 }}>
+                                {isComplete ? (
+                                  <FiCheckCircle style={{ color: '#10B981' }} />
+                                ) : (
+                                  <FiPlayCircle style={{ opacity: 0.5 }} />
+                                )}
+                                <span className="topic-title-player">{topic.title}</span>
+                              </div>
+                              {topic.quiz && <FiHelpCircle size={12} style={{ color: '#f59e0b' }} title="Has Quiz" />}
+                            </button>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         </aside>
       </div>
     </section>
