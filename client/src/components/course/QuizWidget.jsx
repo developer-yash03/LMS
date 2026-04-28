@@ -8,10 +8,32 @@ import { FiCheckCircle, FiXCircle, FiAward } from 'react-icons/fi';
  *   questions  — [{ question, options: string[], answer: number }]
  *   onComplete — (score, total) => void  (called after grading)
  */
-const QuizWidget = ({ questions = [], onComplete }) => {
+const QuizWidget = ({ questions = [], onComplete, timerSeconds = null, start = true }) => {
   const [selected, setSelected] = useState({});       // { questionIndex: optionIndex }
   const [submitted, setSubmitted] = useState(false);
   const [score, setScore] = useState(0);
+  const [remaining, setRemaining] = useState(timerSeconds);
+
+  // Timer effect
+  React.useEffect(() => {
+    if (!timerSeconds || !start || submitted) return undefined;
+
+    setRemaining(timerSeconds);
+    const iv = setInterval(() => {
+      setRemaining((r) => {
+        if (r <= 1) {
+          clearInterval(iv);
+          // Auto-submit when time is up
+          if (!submitted) handleSubmit();
+          return 0;
+        }
+        return r - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(iv);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [timerSeconds, start]);
 
   const handleSelect = (qIndex, optIndex) => {
     if (submitted) return;
@@ -42,6 +64,9 @@ const QuizWidget = ({ questions = [], onComplete }) => {
 
   return (
     <div className="quiz-widget">
+      {timerSeconds && start && (
+        <div className="quiz-timer">Time left: {Math.floor(remaining / 60)}:{String(remaining % 60).padStart(2,'0')}</div>
+      )}
       {/* Score Banner (after submit) */}
       {submitted && (
         <div className={`quiz-score-banner ${score === questions.length ? 'perfect' : score >= questions.length / 2 ? 'pass' : 'fail'}`}>
