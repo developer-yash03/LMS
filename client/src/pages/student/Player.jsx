@@ -114,7 +114,7 @@ const Player = () => {
       const res = await apiRequest(`/courses/${id}/topic/${currentTopic._id}/complete`, 'POST');
       if (res.success) {
         setCompletedTopicIds((prev) => [...prev, String(currentTopic._id)]);
-        setProgress(res.data?.progressPercentage || progress);
+        setProgress(res.progress?.progressPercentage || progress);
         showToast('Topic marked as complete!');
       }
     } catch (error) {

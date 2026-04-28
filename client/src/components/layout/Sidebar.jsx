@@ -44,7 +44,7 @@ const Sidebar = () => {
     instructor: [
       { name: 'Dashboard', path: '/instructor/dashboard', icon: FiGrid },
       { name: 'My Courses', path: '/instructor/courses', icon: FiPlusSquare },
-      { name: 'Assignments', path: '/instructor/assignments', icon: FiCheckSquare },
+      // { name: 'Assignments', path: '/instructor/assignments', icon: FiCheckSquare },
       { name: 'Earnings', path: '/instructor/earnings', icon: FiDollarSign },
     ],
     admin: [
