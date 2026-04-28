@@ -259,6 +259,7 @@ const Browse = () => {
             const canViewDirectly = isEnrolled || isAdmin || isOwner;
             const linkPath = canViewDirectly ? `/player/${course.id}` : `/course/${course.id}`;
             const isComplete = isEnrolled && enrollment.progressPercentage === 100;
+            const isWishlisted = wishlist.includes(course.id);
 
             return (
               <div key={course.id} className="browse-card" style={{ position: 'relative' }}>
