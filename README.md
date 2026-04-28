@@ -6,7 +6,6 @@ ScholarHub is a modern, full-stack Learning Management System designed to provid
 
 ### 👨‍🎓 For Students
 - **Interactive Course Player**: Seamlessly switch between video lessons, topics, and modules.
-- **Assignment Submissions**: Upload your work directly to the cloud (Cloudinary) and receive feedback.
 - **Knowledge Checks**: Real-time quizzes at the end of topics to validate learning.
 - **Progress Tracking**: Visual progress bars and lesson completion markers.
 - **Secure Payments**: Integrated Razorpay for course purchases.
@@ -15,13 +14,11 @@ ScholarHub is a modern, full-stack Learning Management System designed to provid
 ### 👨‍🏫 For Instructors
 - **Course Studio**: Create and manage complex courses with modules and topics.
 - **Revenue Analytics**: Track earnings per course with duration-based filters (7d, 30d, 1y).
-- **Grading Center**: Review student submissions, assign scores (out of 10), and provide feedback.
 - **Dynamic Content**: Support for both YouTube embeds and direct video uploads.
 
 ### 🛡️ For Admins
 - **User Management**: Monitor, suspend, or promote users across the platform.
 - **Course Quality Control**: Review and approve courses before they go live.
-- **Global Overview**: Access to system-wide metrics and user data.
 
 ---
 
