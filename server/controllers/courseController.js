@@ -377,11 +377,41 @@ exports.getCourseContent = async (req, res) => {
     // Get student progress
     const progress = await Progress.findOne({ user: userId, course: courseId });
 
+    // Fetch quizzes for these topics (Admins/Instructors can also see pending)
+    const topicIds = [];
+    course.modules.forEach(mod => {
+      (mod.topics || []).forEach(t => topicIds.push(t._id));
+    });
+
+    const quizFilter = { topic: { $in: topicIds } };
+    if (!isAdmin && !isInstructor) {
+      quizFilter.status = "approved";
+    } else {
+      quizFilter.status = { $in: ["approved", "pending"] };
+    }
+
+    const Quiz = require("../models/Quiz");
+    const quizzes = await Quiz.find(quizFilter).lean();
+    
+    // Create a map of topicId -> quiz
+    const quizMap = {};
+    quizzes.forEach(q => {
+      quizMap[String(q.topic)] = q;
+    });
+
+    // Attach quizzes to topics
+    const courseObj = course.toObject();
+    courseObj.modules.forEach(mod => {
+      (mod.topics || []).forEach(topic => {
+        topic.quiz = quizMap[String(topic._id)] || null;
+      });
+    });
+
     res.status(200).json({
       success: true,
       data: {
-        course: course,
-        modules: course.modules,
+        course: courseObj,
+        modules: courseObj.modules,
         progress: progress
       }
     });
