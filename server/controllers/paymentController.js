@@ -139,3 +139,63 @@ exports.getPaymentHistory = async (req, res) => {
     res.status(500).json({ success: false, error: "Failed to fetch payment history" });
   }
 };
+
+exports.getInstructorEarnings = async (req, res) => {
+  try {
+    const instructorId = req.user._id;
+    const { duration } = req.query; // all, 7d, 30d, 1y
+
+    // 1. Find all courses owned by this instructor
+    const courses = await Course.find({ instructor: instructorId }).select("_id title price");
+    const courseIds = courses.map(c => c._id);
+
+    // 2. Build time filter
+    let timeFilter = {};
+    const now = new Date();
+    if (duration === "7d") {
+      timeFilter = { createdAt: { $gte: new Date(new Date().setDate(now.getDate() - 7)) } };
+    } else if (duration === "30d") {
+      timeFilter = { createdAt: { $gte: new Date(new Date().setMonth(now.getMonth() - 1)) } };
+    } else if (duration === "1y") {
+      timeFilter = { createdAt: { $gte: new Date(new Date().setFullYear(now.getFullYear() - 1)) } };
+    }
+
+    // 3. Aggregate earnings per course
+    const earnings = await Order.aggregate([
+      {
+        $match: {
+          course: { $in: courseIds },
+          paymentStatus: "completed",
+          ...timeFilter
+        }
+      },
+      {
+        $group: {
+          _id: "$course",
+          totalEarned: { $sum: "$amount" },
+          salesCount: { $sum: 1 }
+        }
+      }
+    ]);
+
+    // 4. Map results to include course titles
+    const courseMap = {};
+    courses.forEach(c => {
+      courseMap[String(c._id)] = { title: c.title, price: c.price };
+    });
+
+    const report = earnings.map(e => ({
+      courseId: e._id,
+      title: courseMap[String(e._id)]?.title || "Unknown Course",
+      totalEarned: e.totalEarned,
+      salesCount: e.salesCount
+    }));
+
+    // Calculate total
+    const total = report.reduce((sum, item) => sum + item.totalEarned, 0);
+
+    res.json({ success: true, data: report, total });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+};

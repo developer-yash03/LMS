@@ -24,7 +24,9 @@ const {
   getWishlist,
   getPendingCourseApprovals,
   reviewCourseApproval,
-  getPublicFeaturedCourses
+  getPublicFeaturedCourses,
+  getCourseSubmissions,
+  gradeSubmission
 } = require("../controllers/courseController");
 const { verifyToken, authorizeRoles } = require("../middlewares/auth");
 
@@ -56,6 +58,8 @@ router.delete("/instructor/modules/:moduleId", ...requireInstructorAccess, delet
 router.post("/instructor/modules/:moduleId/topics", ...requireInstructorAccess, addTopicToModule);
 router.put("/instructor/topics/:topicId", ...requireInstructorAccess, updateTopic);
 router.delete("/instructor/topics/:topicId", ...requireInstructorAccess, deleteTopic);
+router.get("/instructor/:courseId/submissions", ...requireInstructorAccess, getCourseSubmissions);
+router.post("/instructor/submissions/:submissionId/grade", ...requireInstructorAccess, gradeSubmission);
 
 // Admin course approval management
 router.get("/admin/pending", verifyToken, authorizeRoles("admin"), getPendingCourseApprovals);
