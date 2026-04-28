@@ -781,29 +781,80 @@ const Create = () => {
                               />
                             </label>
 
-                            <label className="studio-field">
-                              <span>
-                                <FiLink /> Video source
+                            <div className="studio-field studio-span-2">
+                              <span style={{ marginBottom: '0.5rem', display: 'block' }}>
+                                <FiVideo /> Select Video Source
                               </span>
-                              <select
-                                value={draft.videoType}
-                                onChange={(event) => updateTopicDraft(module._id, 'videoType', event.target.value)}
-                              >
-                                <option value="youtube">YouTube link</option>
-                                <option value="upload">Hosted video file</option>
-                                <option value="link">External link</option>
-                              </select>
-                            </label>
+                              <div className="video-source-options" style={{ display: 'flex', gap: '1rem' }}>
+                                <button
+                                  type="button"
+                                  className={`source-chip ${draft.videoType === 'youtube' ? 'active' : ''}`}
+                                  onClick={() => updateTopicDraft(module._id, 'videoType', 'youtube')}
+                                  style={{
+                                    padding: '0.5rem 1rem',
+                                    borderRadius: '20px',
+                                    border: '1px solid var(--border-color)',
+                                    background: draft.videoType === 'youtube' ? 'var(--primary-blue)' : 'transparent',
+                                    color: draft.videoType === 'youtube' ? '#fff' : 'inherit',
+                                    cursor: 'pointer',
+                                    fontSize: '0.85rem'
+                                  }}
+                                >
+                                  YouTube Link
+                                </button>
+                                <button
+                                  type="button"
+                                  className={`source-chip ${draft.videoType === 'upload' ? 'active' : ''}`}
+                                  onClick={() => updateTopicDraft(module._id, 'videoType', 'upload')}
+                                  style={{
+                                    padding: '0.5rem 1rem',
+                                    borderRadius: '20px',
+                                    border: '1px solid var(--border-color)',
+                                    background: draft.videoType === 'upload' ? 'var(--primary-blue)' : 'transparent',
+                                    color: draft.videoType === 'upload' ? '#fff' : 'inherit',
+                                    cursor: 'pointer',
+                                    fontSize: '0.85rem'
+                                  }}
+                                >
+                                  Upload Video File
+                                </button>
+                                <button
+                                  type="button"
+                                  className={`source-chip ${draft.videoType === 'link' ? 'active' : ''}`}
+                                  onClick={() => updateTopicDraft(module._id, 'videoType', 'link')}
+                                  style={{
+                                    padding: '0.5rem 1rem',
+                                    borderRadius: '20px',
+                                    border: '1px solid var(--border-color)',
+                                    background: draft.videoType === 'link' ? 'var(--primary-blue)' : 'transparent',
+                                    color: draft.videoType === 'link' ? '#fff' : 'inherit',
+                                    cursor: 'pointer',
+                                    fontSize: '0.85rem'
+                                  }}
+                                >
+                                  External Link
+                                </button>
+                              </div>
+                            </div>
 
                             <label className="studio-field studio-span-2">
                               <span>
-                                <FiYoutube /> Video Content
+                                {draft.videoType === 'upload' ? <FiUpload /> : <FiLink />} 
+                                {draft.videoType === 'upload' ? ' Video Content (File)' : ' Video Content (URL)'}
                               </span>
                               {draft.videoType === 'upload' ? (
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                <div className="video-upload-box" style={{ 
+                                  padding: '1.5rem', 
+                                  border: '2px dashed var(--border-color)', 
+                                  borderRadius: '8px',
+                                  textAlign: 'center',
+                                  background: '#f8fafc'
+                                }}>
                                   <input
                                     type="file"
                                     accept="video/*"
+                                    id={`video-upload-${module._id}`}
+                                    style={{ display: 'none' }}
                                     disabled={uploadingTopicId === module._id}
                                     onChange={async (e) => {
                                       const file = e.target.files[0];
@@ -820,13 +871,28 @@ const Create = () => {
                                       }
                                     }}
                                   />
-                                  {uploadingTopicId === module._id && (
-                                    <span style={{ fontSize: '0.85rem', color: '#6b7280', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                      <FiLoader className="spin" /> Uploading video to cloud...
-                                    </span>
-                                  )}
-                                  {draft.videoUrl && uploadingTopicId !== module._id && (
-                                    <p style={{ fontSize: '0.8rem', color: '#16A34A', margin: 0 }}>✓ Video ready: {draft.videoUrl.split('/').pop()}</p>
+                                  <label 
+                                    htmlFor={`video-upload-${module._id}`}
+                                    style={{ 
+                                      cursor: 'pointer',
+                                      display: 'flex',
+                                      flexDirection: 'column',
+                                      alignItems: 'center',
+                                      gap: '0.5rem'
+                                    }}
+                                  >
+                                    {uploadingTopicId === module._id ? (
+                                      <><FiLoader className="spin" size={24} /> <span>Uploading video...</span></>
+                                    ) : draft.videoUrl ? (
+                                      <><FiCheckCircle size={24} color="#16A34A" /> <span style={{ color: '#16A34A' }}>Video Ready</span></>
+                                    ) : (
+                                      <><FiUpload size={24} /> <span>Click to browse video files</span></>
+                                    )}
+                                  </label>
+                                  {draft.videoUrl && (
+                                    <p style={{ fontSize: '0.75rem', marginTop: '0.5rem', color: '#64748b', wordBreak: 'break-all' }}>
+                                      {draft.videoUrl}
+                                    </p>
                                   )}
                                 </div>
                               ) : (
@@ -834,7 +900,7 @@ const Create = () => {
                                   type="text"
                                   value={draft.videoUrl}
                                   onChange={(event) => updateTopicDraft(module._id, 'videoUrl', event.target.value)}
-                                  placeholder="Paste a YouTube or external URL"
+                                  placeholder={draft.videoType === 'youtube' ? "Paste YouTube link here..." : "Paste external video URL here..."}
                                 />
                               )}
                             </label>

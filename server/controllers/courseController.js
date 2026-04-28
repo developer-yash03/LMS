@@ -356,11 +356,21 @@ exports.getCourseContent = async (req, res) => {
     // Check if student is enrolled
     const course = await Course.findById(courseId).populate(coursePopulateOptions);
 
-    if (course && !isCourseApproved(course)) {
+    if (!course) {
+      return res.status(404).json({ success: false, message: "Course not found" });
+    }
+
+    const isAdmin = req.user.role === "admin";
+    const isInstructor = String(course.instructor?._id || course.instructor) === String(userId);
+    const isEnrolled = course.enrolledStudents.some(id => String(id) === String(userId));
+
+    // Security: Only students need approval check, admins and the instructor can see pending courses
+    if (!isAdmin && !isInstructor && !isCourseApproved(course)) {
       return res.status(403).json({ success: false, message: "Course is not available yet" });
     }
 
-    if (!course || !course.enrolledStudents.includes(userId)) {
+    // Security: Allow access if enrolled, admin, or instructor of the course
+    if (!isEnrolled && !isAdmin && !isInstructor) {
       return res.status(403).json({ success: false, message: "Not enrolled in this course" });
     }
 
@@ -393,7 +403,21 @@ exports.markTopicComplete = async (req, res) => {
     let progress = await Progress.findOne({ user: userId, course: courseId });
 
     if (!progress) {
-      return res.status(404).json({ success: false, message: "Progress record not found" });
+      // Allow Admins and the course's Instructor to create progress as they view
+      const isAdmin = req.user.role === "admin";
+      const courseCheck = await Course.findById(courseId);
+      const isInstructor = courseCheck && String(courseCheck.instructor?._id || courseCheck.instructor) === String(userId);
+
+      if (isAdmin || isInstructor) {
+        progress = new Progress({
+          user: userId,
+          course: courseId,
+          completedTopics: [],
+          progressPercentage: 0
+        });
+      } else {
+        return res.status(404).json({ success: false, message: "Progress record not found. Please enroll first." });
+      }
     }
 
     if (!progress.completedTopics.includes(topicId)) {
@@ -434,6 +458,24 @@ exports.getCourseProgress = async (req, res) => {
     const progress = await Progress.findOne({ user: userId, course: courseId }).populate("completedTopics");
 
     if (!progress) {
+      // For Admins and the course's Instructor, return a default empty progress 
+      // instead of 404 so they can still use the player.
+      const isAdmin = req.user.role === "admin";
+      const course = await Course.findById(courseId);
+      const isInstructor = course && String(course.instructor?._id || course.instructor) === String(userId);
+
+      if (isAdmin || isInstructor) {
+        return res.status(200).json({
+          success: true,
+          data: {
+            user: userId,
+            course: courseId,
+            completedTopics: [],
+            progressPercentage: 0
+          }
+        });
+      }
+
       return res.status(404).json({ success: false, message: "No progress found" });
     }
 
