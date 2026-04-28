@@ -250,23 +250,24 @@ const Browse = () => {
       ) : courses.length > 0 ? (
         <div className="browse-grid">
           {courses.map((course) => {
-            const enrollment = enrolledCourses.find(e => e._id === course.id);
+            const enrollment = enrolledCourses.find(e => String(e._id) === String(course._id));
             const isEnrolled = !!enrollment;
+
             const isAdmin = user?.role === 'admin';
             const isInstructor = user?.role === 'instructor';
             const isOwner = isInstructor && (String(course.instructor?._id || course.instructor) === String(user?.id || user?._id));
             
             const canViewDirectly = isEnrolled || isAdmin || isOwner;
-            const linkPath = canViewDirectly ? `/player/${course.id}` : `/course/${course.id}`;
+            const linkPath = canViewDirectly ? `/player/${course._id}` : `/course/${course._id}`;
             const isComplete = isEnrolled && enrollment.progressPercentage === 100;
-            const isWishlisted = wishlist.includes(course.id);
+            const isWishlisted = wishlist.includes(course._id);
 
             return (
-              <div key={course.id} className="browse-card" style={{ position: 'relative' }}>
+              <div key={course._id} className="browse-card" style={{ position: 'relative' }}>
                 <Link to={linkPath} style={{ display: 'block', textDecoration: 'none', color: 'inherit' }}>
                   <div className="browse-card-image">
                     <img
-                      src={course.thumbnail || `https://picsum.photos/seed/${course.id}/800/450`}
+                      src={course.thumbnail || `https://picsum.photos/seed/${course._id}/800/450`}
                       alt={course.title}
                     />
                     {isComplete && (
@@ -334,7 +335,7 @@ const Browse = () => {
                 </Link>
                 {user && user.role === 'student' && (
                   <button
-                    onClick={(e) => handleWishlistToggle(e, course.id)}
+                    onClick={(e) => handleWishlistToggle(e, course._id)}
                     style={{
                       position: 'absolute',
                       top: '10px',

@@ -364,12 +364,15 @@ exports.getCourseContent = async (req, res) => {
     const isInstructor = String(course.instructor?._id || course.instructor) === String(userId);
     const isEnrolled = course.enrolledStudents.some(id => String(id) === String(userId));
 
-    // Security: Only students need approval check, admins and the instructor can see pending courses
-    if (!isAdmin && !isInstructor && !isCourseApproved(course)) {
+    // Security: Admins and the course Instructor can see pending courses.
+    // Enrolled students can also see the course content even if it's pending (for testing/manual enrollments).
+    const canAccessPending = isAdmin || isInstructor || isEnrolled;
+
+    if (!canAccessPending && !isCourseApproved(course)) {
       return res.status(403).json({ success: false, message: "Course is not available yet" });
     }
 
-    // Security: Allow access if enrolled, admin, or instructor of the course
+    // Security: Final check to ensure access is only for enrolled/admin/instructor
     if (!isEnrolled && !isAdmin && !isInstructor) {
       return res.status(403).json({ success: false, message: "Not enrolled in this course" });
     }
@@ -384,12 +387,7 @@ exports.getCourseContent = async (req, res) => {
     });
 
     const quizFilter = { topic: { $in: topicIds } };
-    if (!isAdmin && !isInstructor) {
-      quizFilter.status = "approved";
-    } else {
-      quizFilter.status = { $in: ["approved", "pending"] };
-    }
-
+    
     const Quiz = require("../models/Quiz");
     const quizzes = await Quiz.find(quizFilter).lean();
     
