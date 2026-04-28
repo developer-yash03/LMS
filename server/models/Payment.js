@@ -24,4 +24,7 @@ const orderSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now }
 });
 
+// Speeds up payment history queries
+orderSchema.index({ user: 1, paymentStatus: 1 });
+
 module.exports = mongoose.model("Order", orderSchema);

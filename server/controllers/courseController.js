@@ -3,6 +3,7 @@ const Module = require("../models/Module");
 const Topic = require("../models/Topic");
 const User = require("../models/User");
 const Progress = require("../models/Progress");
+const Submission = require("../models/Submission");
 const mongoose = require("mongoose");
 
 const COURSE_APPROVAL_STATUS = {
@@ -93,6 +94,24 @@ const removeCourseChildren = async (courseId) => {
 };
 
 // Get all courses with filters and search
+exports.getPublicFeaturedCourses = async (req, res) => {
+  try {
+    const courses = await Course.aggregate([
+      { $match: { $or: [{ approvalStatus: "approved" }, { approvalStatus: { $exists: false } }] } },
+      { $addFields: { studentsCount: { $size: { $ifNull: ["$enrolledStudents", []] } } } },
+      { $sort: { studentsCount: -1, rating: -1 } },
+      { $limit: 6 },
+      { $lookup: { from: "users", localField: "instructor", foreignField: "_id", as: "instructorDetails" } },
+      { $unwind: { path: "$instructorDetails", preserveNullAndEmptyArrays: true } },
+      { $addFields: { "instructor.name": "$instructorDetails.name", id: "$_id", _id: "$_id" } }
+    ]);
+    
+    res.status(200).json(courses);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
 exports.getAllCourses = async (req, res) => {
   try {
     const {
@@ -202,10 +221,6 @@ exports.getCourseDetails = async (req, res) => {
     const course = await getPopulatedCourse(courseId);
 
     if (!course) {
-      return res.status(404).json({ success: false, message: "Course not found" });
-    }
-
-    if (!isCourseApproved(course)) {
       return res.status(404).json({ success: false, message: "Course not found" });
     }
 
@@ -409,6 +424,51 @@ exports.getCourseProgress = async (req, res) => {
       success: true,
       data: progress
     });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+// Submit an assignment for a topic
+exports.submitAssignment = async (req, res) => {
+  try {
+    const { courseId, topicId } = req.params;
+    const { fileUrl } = req.body;
+    const userId = req.user._id;
+
+    if (!fileUrl) {
+      return res.status(400).json({ success: false, message: "File URL is required" });
+    }
+
+    if (!isValidObjectId(courseId) || !isValidObjectId(topicId)) {
+      return res.status(400).json({ success: false, message: "Invalid ID" });
+    }
+
+    // Upsert submission (if they submit again, just overwrite)
+    const submission = await Submission.findOneAndUpdate(
+      { user: userId, topic: topicId, course: courseId },
+      { fileUrl, submittedAt: Date.now() },
+      { new: true, upsert: true }
+    );
+
+    res.status(200).json({ success: true, message: "Assignment submitted successfully", data: submission });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+// Get a student's submission for a topic
+exports.getAssignmentSubmission = async (req, res) => {
+  try {
+    const { topicId } = req.params;
+    const userId = req.user._id;
+
+    if (!isValidObjectId(topicId)) {
+      return res.status(400).json({ success: false, message: "Invalid topic ID" });
+    }
+
+    const submission = await Submission.findOne({ user: userId, topic: topicId });
+    res.status(200).json({ success: true, data: submission });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }

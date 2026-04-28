@@ -11,4 +11,7 @@ const progressSchema = new mongoose.Schema({
   progressPercentage: { type: Number, default: 0 }
 });
 
+// Critical: This query runs in a loop on every My Learning page load
+progressSchema.index({ user: 1, course: 1 }, { unique: true });
+
 module.exports = mongoose.model("Progress", progressSchema);

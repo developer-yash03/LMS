@@ -73,6 +73,22 @@
   transition: opacity 0.2s;
 }
 
+.btn-secondary {
+  padding: 1rem 2.5rem;
+  background-color: transparent;
+  color: #4b3621;
+  border: 2px solid #4b3621;
+  border-radius: 8px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+.btn-secondary:hover {
+  background-color: #4b3621;
+  color: #fff;
+}
+
 .hero-social-proof {
   display: flex;
   align-items: center;
@@ -132,10 +148,12 @@
   font-family: 'Georgia', serif;
   font-size: 2.5rem;
   margin-bottom: 0.5rem;
+  text-align: left;
 }
 
 .disciplines-header p {
   color: #6b7280;
+  text-align: left;
 }
 
 .view-all-text {
@@ -143,6 +161,12 @@
   font-weight: 700;
   text-decoration: none;
   font-size: 0.9rem;
+}
+
+.home-featured-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2rem;
 }
 
 .disciplines-grid {
@@ -258,4 +282,15 @@
   .hero-container { grid-template-columns: 1fr; }
   .disciplines-grid { grid-template-columns: 1fr; }
   .discipline-card-large { height: 400px; }
+  
+  .home-featured-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
+
+@media (max-width: 768px) {
+  .home-featured-grid {
+    grid-template-columns: 1fr;
+  }
+}
+

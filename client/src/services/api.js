@@ -24,3 +24,27 @@ export const apiRequest = async (endpoint, method = "GET", body = null) => {
     throw error;
   }
 };
+
+export const uploadMedia = async (file) => {
+  const token = localStorage.getItem("lms_token");
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const headers = {
+    ...(token && { "Authorization": `Bearer ${token}` }),
+  };
+
+  try {
+    const response = await fetch(`${BASE_URL}/api/upload`, {
+      method: "POST",
+      headers,
+      body: formData,
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message || "Upload failed");
+    return data;
+  } catch (error) {
+    console.error("Upload Error:", error);
+    throw error;
+  }
+};

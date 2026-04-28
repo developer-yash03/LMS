@@ -17,6 +17,9 @@ const topicSchema = new mongoose.Schema({
   },
 
   notes: String,
+  
+  assignmentUrl: String,
+  resourceUrls: [String],
 
   durationMinutes: Number,
 
@@ -30,5 +33,8 @@ const topicSchema = new mongoose.Schema({
     ref: "Module"
   }
 });
+
+// Speeds up Topic population and cascading deletes
+topicSchema.index({ module: 1, order: 1 });
 
 module.exports = mongoose.model("Topic", topicSchema);

@@ -3,6 +3,9 @@ const dotenv = require("dotenv");
 const cors = require("cors");
 const mongoose = require("mongoose");
 const path = require("path");
+const courseRoutes = require("./routes/course");
+const configRoutes = require("./routes/config");
+const uploadRoutes = require("./routes/upload");
 
 // Load env
 dotenv.config({ path: path.join(__dirname, ".env") });
@@ -58,9 +61,10 @@ app.use(async (req, res, next) => {
 // Routes
 app.use("/api/signup", require("./routes/signup")); // FIRST
 app.use("/api/auth", require("./routes/auth"));
-app.use("/api/payment", require("./routes/paymentRoutes"));
+app.use("/api/courses", courseRoutes);
+app.use("/api/config", configRoutes);
+app.use("/api/upload", uploadRoutes);
 
-app.use("/api/courses", require("./routes/course"));
 app.use("/api", require("./routes/test")); // LAST
 
 // Start server locally OR export for Vercel Serverless Functions
