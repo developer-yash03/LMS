@@ -16,9 +16,14 @@ const Login = () => {
 
   React.useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    if (params.get('error') === 'suspended' && !toastShown.current) {
-      showToast('Your account has been temporarily suspended. Please contact support.', 'error');
-      toastShown.current = true;
+    if (!toastShown.current) {
+      if (params.get('error') === 'suspended') {
+        showToast('Your account has been temporarily suspended. Please contact support.', 'error');
+        toastShown.current = true;
+      } else if (params.get('error') === 'expired') {
+        showToast('Your session has expired. Please log in again.', 'info');
+        toastShown.current = true;
+      }
     }
   }, [showToast]);
 

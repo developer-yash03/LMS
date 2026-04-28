@@ -127,7 +127,20 @@ const Player = () => {
         <p>You might not be enrolled in this course yet.</p>
       </section>
     );
-  }
+
+  const getEmbedUrl = (url) => {
+    if (!url) return null;
+    const ytRegex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i;
+    const ytMatch = url.match(ytRegex);
+    if (ytMatch && ytMatch[1]) {
+      return `https://www.youtube.com/embed/${ytMatch[1]}`;
+    }
+    return url;
+  };
+
+  const videoUrl = currentTopic?.videoUrl;
+  const embedUrl = getEmbedUrl(videoUrl);
+  const isYoutube = embedUrl?.includes('youtube.com/embed');
 
   return (
     <section className="page-container">
@@ -142,7 +155,7 @@ const Player = () => {
             marginBottom: '0.5rem',
           }}
         >
-          <h3 style={{ margin: 0, fontSize: '1.125rem' }}>{course.title}</h3>
+          <h3 style={{ margin: 0, fontSize: '1.125rem' }}>{course?.title}</h3>
           <span
             style={{
               fontSize: '0.85rem',
@@ -161,7 +174,33 @@ const Player = () => {
           {currentTopic ? (
             <>
               <div className="player-video-container">
-                <FiPlayCircle style={{ opacity: 0.8 }} />
+                {videoUrl ? (
+                  isYoutube ? (
+                    <iframe
+                      width="100%"
+                      height="100%"
+                      src={embedUrl}
+                      title="YouTube video player"
+                      frameBorder="0"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                      allowFullScreen
+                      style={{ borderRadius: '12px' }}
+                    ></iframe>
+                  ) : (
+                    <video 
+                      src={videoUrl} 
+                      controls 
+                      width="100%" 
+                      height="100%" 
+                      style={{ borderRadius: '12px', background: '#000' }}
+                    />
+                  )
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
+                    <FiPlayCircle size={48} style={{ opacity: 0.3 }} />
+                    <p>No video content</p>
+                  </div>
+                )}
               </div>
               <h2 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>{currentTopic.title}</h2>
               <p style={{ color: 'var(--text-muted)', marginBottom: '1rem' }}>

@@ -25,6 +25,12 @@ export const apiRequest = async (endpoint, method = "GET", body = null) => {
         window.location.href = "/login?error=suspended";
         return;
       }
+      if (response.status === 401 && (data.message?.toLowerCase().includes("token") || data.message?.toLowerCase().includes("expired") || data.message?.toLowerCase().includes("not authorized"))) {
+        localStorage.removeItem("lms_user");
+        localStorage.removeItem("lms_token");
+        window.location.href = "/login?error=expired";
+        return;
+      }
       throw new Error(data.message || "Something went wrong");
     }
     return data;
