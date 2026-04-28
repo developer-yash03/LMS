@@ -19,6 +19,9 @@ const verifyToken = async (req, res, next) => {
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.user = await User.findById(decoded.id).select("-password");
+    if (req.user && req.user.isSuspended) {
+      return res.status(403).json({ success: false, message: "Your account is temporarily suspended." });
+    }
     next();
   } catch (error) {
     return res.status(401).json({ success: false, message: "Not authorized, token failed" });

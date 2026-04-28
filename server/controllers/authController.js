@@ -20,17 +20,25 @@ const generateToken = (id) => {
 const login = async (req, res) => {
   try {
     const { email, password } = req.body;
+    const normalizedEmail = String(email || "").trim().toLowerCase();
 
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email: normalizedEmail });
 
     if (!user) {
       return res.status(401).json({ success: false, message: "Invalid email or password" });
     }
 
-    if (!user.isVerified) {
+    if (!user.isVerified && user.role !== "admin") {
       return res.status(401).json({ 
         success: false, 
         message: "Your email is not verified. Please verify your email before logging in." 
+      });
+    }
+
+    if (user.isSuspended) {
+      return res.status(403).json({
+        success: false,
+        message: "Your account is temporarily suspended. Please contact support."
       });
     }
 
@@ -59,6 +67,9 @@ const login = async (req, res) => {
 const getMe = async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select("-password");
+    if (user && user.isSuspended) {
+      return res.status(403).json({ success: false, message: "Your account is temporarily suspended." });
+    }
     res.status(200).json({
       success: true,
       data: user,

@@ -17,7 +17,16 @@ export const apiRequest = async (endpoint, method = "GET", body = null) => {
   try {
     const response = await fetch(`${BASE_URL}/api${endpoint}`, config);
     const data = await response.json();
-    if (!response.ok) throw new Error(data.message || "Something went wrong");
+    
+    if (!response.ok) {
+      if (response.status === 403 && data.message?.toLowerCase().includes("suspended")) {
+        localStorage.removeItem("lms_user");
+        localStorage.removeItem("lms_token");
+        window.location.href = "/login?error=suspended";
+        return;
+      }
+      throw new Error(data.message || "Something went wrong");
+    }
     return data;
   } catch (error) {
     console.error("API Error:", error);

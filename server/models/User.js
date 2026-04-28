@@ -26,6 +26,7 @@ const userSchema = new mongoose.Schema({
   otpExpiry: Date,
   otpCooldown: Date,
   isVerified: { type: Boolean, default: false },
+  isSuspended: { type: Boolean, default: false },
   createdAt: { type: Date, default: Date.now },
   expireAt: { type: Date, index: { expires: 0 } } // TTL index for unverified users
 });

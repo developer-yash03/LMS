@@ -44,7 +44,8 @@ const courseSchema = new mongoose.Schema({
   },
   approvalStatus: {
     type: String,
-    enum: ["pending", "approved", "rejected"]
+    enum: ["pending", "approved", "rejected"],
+    default: "pending"
   },
   approvalNote: {
     type: String,

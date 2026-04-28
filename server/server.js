@@ -64,6 +64,8 @@ app.use("/api/auth", require("./routes/auth"));
 app.use("/api/courses", courseRoutes);
 app.use("/api/config", configRoutes);
 app.use("/api/upload", uploadRoutes);
+app.use("/api/payment", require("./routes/paymentRoutes"));
+app.use("/api/admin", require("./routes/admin"));
 
 app.use("/api", require("./routes/test")); // LAST
 
